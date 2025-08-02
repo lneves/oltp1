@@ -7,29 +7,34 @@ import picocli.CommandLine.Option;
 public class BenchmarkArgs 
 {
 	@Option(names = { "-h", "--host" }, description = "Database host", required = true)
-	String host;
+	public String host;
 
 	@Option(names = { "-p", "--port" }, description = "Database listening port")
-	int port;
+	public int port;
 
 	@Option(names = { "-U", "--user" }, description = "Database username", required = true)
-	String user;
+	public String user;
 
 	@Option(names = { "-P", "--password" }, description = "Database user password", required = true)
-	String password;
+	public String password;
 
 	@Option(names = { "-e", "--engine" }, description = "Database Engine under test, valid values: ${COMPLETION-CANDIDATES}", required = true)
-	DbEngine engine;
+	public DbEngine engine;
 
 	@Option(names = { "-d", "--duration" }, description = "Duration of the test run in seconds. [${DEFAULT-VALUE}]", required = true)
-	int duration = 360;
+	public int duration = 360;
 
 	@Option(names = { "-c", "--clients" }, description = "Number of simulated clients/users. [${DEFAULT-VALUE}]", required = true)
-	int clients = 10;
+	public int clients = 10;
 
 	@Option(names = { "-b", "--baseline" }, description = "Only execute a baseline query during the run")
-	boolean is_baseline = false;
+	public boolean is_baseline = false;
 
+	@Option(names = { "-w", "--wait-time" }, description = "Enable pacing to control the transaction rate")
+	public boolean is_pacing = false;
+
+	@Option(names = { "--tps" }, description = "Target transactions per second for pacing. [${DEFAULT-VALUE}]")
+	public int tps = 10;
 
 	@Override
 	public String toString()

@@ -70,18 +70,11 @@ public class TxBrokerVolume extends TxBase
 		
 		if (sqlCtx.getSqlEngine() == SqlEngine.POSTGRESQL)
 		{
-			try
-			{
-				Array tradeIds = con.getJdbcConnection().createArrayOf("varchar", txInput.broker_list);
+			Array brokerArr = con.getJdbcConnection().createArrayOf("varchar", txInput.broker_list);
 
-				txQ
-						.addParameter("broker_list", tradeIds)
-						.addParameter("sector_name", txInput.sector_name);
-			}
-			catch (SQLException e)
-			{
-				throw new RuntimeException(e);
-			}
+			txQ
+					.addParameter("broker_list", brokerArr)
+					.addParameter("sector_name", txInput.sector_name);
 		}
 		else if (sqlCtx.getSqlEngine() == SqlEngine.MSSQL)
 		{

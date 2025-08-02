@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.caudexorigo.db.Assert;
+import org.caudexorigo.oltp1.BenchmarkArgs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +32,27 @@ public class MixRunner
 	private final int numClients;
 	private final AtomicLong transactionCounter = new AtomicLong(0);
 
-	public MixRunner(String sutInfo, int numClients)
+	private final boolean isPacingEnabled;
+	private final long interTransactionDelayNanos;
+
+	public MixRunner(String sutInfo, BenchmarkArgs bargs)
 	{
 		super();
 		this.txMix = new ArrayList<>();
 		this.txPeriodic = new ArrayList<>();
-		this.numClients = numClients;
+		this.numClients = bargs.clients;
 		this.runSummary = new TxRunSummary(sutInfo, numClients);
+
+		this.isPacingEnabled = bargs.is_pacing;
+		if (isPacingEnabled)
+		{
+			double targetTpsPerClient = (double) bargs.tps / numClients;
+			this.interTransactionDelayNanos = (long) (1_000_000_000.0 / targetTpsPerClient);
+		}
+		else
+		{
+			this.interTransactionDelayNanos = 0;
+		}
 	}
 
 	public void addPeriodic(PeriodicTx tx)
@@ -77,11 +92,39 @@ public class MixRunner
 		});
 
 		final Runnable clientTx = () -> {
+
+			long startTime = 0;
+			if (isPacingEnabled)
+			{
+				startTime = System.nanoTime();
+			}
+
 			// pick the nearest tx with a key > than a random number
 			final double p = rnd.randomDouble(0.0, 1.0);
 			final TxBase tx = txMixRange.ceilingEntry(p).getValue();
 			tx.execute();
 			transactionCounter.incrementAndGet();
+
+			if (isPacingEnabled)
+			{
+				long endTime = System.nanoTime();
+				long transactionDurationNanos = endTime - startTime;
+				long waitTimeNanos = interTransactionDelayNanos - transactionDurationNanos;
+
+				if (waitTimeNanos > 0)
+				{
+					try
+					{
+						long waitMillis = waitTimeNanos / 1_000_000;
+						int waitNanos = (int) (waitTimeNanos % 1_000_000);
+						Thread.sleep(waitMillis, waitNanos);
+					}
+					catch (InterruptedException e)
+					{
+						Thread.currentThread().interrupt();
+					}
+				}
+			}
 		};
 
 		final ScheduledExecutorService schedExec = Executors.newScheduledThreadPool(1);
@@ -144,9 +187,9 @@ public class MixRunner
 		try
 		{
 			clients.awaitTermination(runDuration, TimeUnit.SECONDS);
-			
+
 			// Print a final 100% line to ensure it's complete
-			progressReporter.run(); 
+			progressReporter.run();
 			System.out.println(); // Move to the next line after the progress bar is done
 		}
 		catch (InterruptedException ie)

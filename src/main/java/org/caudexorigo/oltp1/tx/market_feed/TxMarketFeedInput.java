@@ -6,22 +6,23 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.caudexorigo.oltp1.model.Ticker;
 import org.caudexorigo.oltp1.model.TradeStatus;
+import org.caudexorigo.oltp1.model.TradeType;
 
 public class TxMarketFeedInput
 {
 	// Status type for submitted trades
 	public final String status_submitted;
 	// Trade type ID for limit buy orders.
-	public final String type_limit_buy;
+	public final TradeType type_limit_buy;
 	// Trade type ID for limit sell orders.
-	public final String type_limit_sell;
+	public final TradeType type_limit_sell;
 	// Trade type ID for stop loss orders.
-	public final String type_stop_loss;
+	public final TradeType type_stop_loss;
 	// A list of trades that make up the feed for this transaction.
 	public final Collection<Ticker> tickers;
 	public final int unique_symbols;
 
-	public TxMarketFeedInput(TradeStatus statusSubmitted, String tradeTypeLimitBuy, String tradeTypeLimitSell, String tradeTypeStopLoss, Collection<Ticker> tickers, int uniqueSymbols)
+	public TxMarketFeedInput(TradeStatus statusSubmitted, TradeType tradeTypeLimitBuy, TradeType tradeTypeLimitSell, TradeType tradeTypeStopLoss, Collection<Ticker> tickers, int uniqueSymbols)
 	{
 		this.status_submitted = statusSubmitted.id;
 		this.type_limit_buy = tradeTypeLimitBuy;

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 public class TxMarketFeed extends TxBase
 {
 	private static final Logger log = LoggerFactory.getLogger(TxMarketFeed.class);
-
+	
 	private final Queue<TxMarketFeedInput> mq = new ConcurrentLinkedQueue<>();
 	private final ObjectMapper json = new ObjectMapper();
 
@@ -80,9 +80,9 @@ public class TxMarketFeed extends TxBase
 			List<Map<String, Object>> tradeRequests = con
 					.createQuery(sql.getRequestList())
 					.addParameter("tickers", tickerJson)
-					.addParameter("tt_buy", txInput.type_limit_buy)
-					.addParameter("tt_sell", txInput.type_limit_sell)
-					.addParameter("tt_stop", txInput.type_stop_loss)
+					.addParameter("tt_buy", txInput.type_limit_buy.id)
+					.addParameter("tt_sell", txInput.type_limit_sell.id)
+					.addParameter("tt_stop", txInput.type_stop_loss.id)
 					.executeAndFetchTable()
 					.asList();
 
@@ -137,5 +137,4 @@ public class TxMarketFeed extends TxBase
 
 		return txOutput;
 	}
-
 }

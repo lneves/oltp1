@@ -10,6 +10,7 @@ public class TxTradeOrderOutput extends TxOutput
 {
 	public Map<String, Object> output;
 	public int num_found;
+	public boolean is_rollback;
 
 	public TxTradeOrderOutput()
 	{
@@ -19,6 +20,7 @@ public class TxTradeOrderOutput extends TxOutput
 	public TxTradeOrderOutput(int status)
 	{
 		super(status);
+		is_rollback = false;
 	}
 
 	@Override
@@ -26,6 +28,7 @@ public class TxTradeOrderOutput extends TxOutput
 	{
 		return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
 				.append("output", output)
+				.append("is_rollback", is_rollback)
 				.append("tx_status", getStatus())
 				.append("tx_status_message", getStatusMessage())
 				.toString();

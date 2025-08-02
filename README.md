@@ -41,7 +41,7 @@ One potential issue, however, is the lack of guaranteed ordering. The specificat
 #### 2. Transaction Input Generation
 * **Deviation**: The official TPC-E EGen tool is a sophisticated state machine that navigates data interdependencies and state transitions to generate transaction inputs. This implementation simplifies this by loading reference data from the database into memory during startup.
 * **Reasoning**: Replicating the entire EGen state machine is a massive undertaking. This approach is a significant simplification that still provides the necessary data for generating compliant inputs for the transactions. It captures the essence of the data relationships without the full complexity of the official generator.
-
+At startup the driver populates some internal data strutures by querying the database for essential reference data like customer and company identifiers. To efficiently manage these potentially large datasets without impacting the JVM's garbage collector, this data is stored off-heap.
 
 #### 3. Database Interaction and SQL Dialects
 * **Deviation**: For complex inputs, this implementations passes data as **JSON strings** and use database-specific functions to parse them (e.g., `jsonb_to_recordset` in PostgreSQL  and `OPENJSON` in SQL Server ). The TPC-E spec does not define inputs in this manner.

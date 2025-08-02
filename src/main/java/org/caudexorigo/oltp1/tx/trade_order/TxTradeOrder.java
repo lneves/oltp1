@@ -35,9 +35,10 @@ public class TxTradeOrder extends TxBase
 {
 	private static final Logger log = LoggerFactory.getLogger(TxTradeOrder.class);
 
-	private static final String TRADE_TYPE_LIMIT_BUY = "TLB";
-	private static final String TRADE_TYPE_LIMIT_SELL = "TLS";
-	private static final String TRADE_TYPE_STOP_LOSS = "TSL";
+	private static final String MEE_ACTION_PROCESS_ORDER = "eMEEProcessOrder";
+	private static final String MEE_ACTION_SET_LIMIT_ORDER_TRIGGER = "eMEESetLimitOrderTrigger";
+
+
 	private static final int max_feed_len = 20;
 
 	private final Sql2o sql2o;
@@ -123,6 +124,7 @@ public class TxTradeOrder extends TxBase
 			{
 				executeFrame5(con);
 				txOutput.output = Collections.singletonMap("is_rollback", true);
+				txOutput.is_rollback = true;
 			}
 			else
 			{
@@ -142,11 +144,11 @@ public class TxTradeOrder extends TxBase
 
 						if (session.getAsBoolean("type_is_market"))
 						{
-							meeMsg.put("eAction", "eMEEProcessOrder");
+							meeMsg.put("eAction",MEE_ACTION_PROCESS_ORDER);
 						}
 						else
 						{
-							meeMsg.put("eAction", "eMEESetLimitOrderTrigger");
+							meeMsg.put("eAction", MEE_ACTION_SET_LIMIT_ORDER_TRIGGER);
 						}
 
 						txTradeResult.offer(meeMsg);
@@ -169,7 +171,12 @@ public class TxTradeOrder extends TxBase
 
 							if (tickers.size() >= Math.min(10, max_feed_len))
 							{
-								TxMarketFeedInput txMktFeedIn = new TxMarketFeedInput(TradeStatus.SUBMITTED, TRADE_TYPE_LIMIT_BUY, TRADE_TYPE_LIMIT_SELL, TRADE_TYPE_STOP_LOSS, tickers, tickers.size());
+								TxMarketFeedInput txMktFeedIn = new TxMarketFeedInput(
+										TradeStatus.SUBMITTED
+										, TradeType.LIMIT_BUY  
+										, TradeType.LIMIT_SELL
+										, TradeType.STOP_LOSS
+										, tickers, tickers.size());
 								txMarketFeed.offer(txMktFeedIn);
 								tickers.clear();
 							}

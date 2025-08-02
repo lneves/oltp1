@@ -44,13 +44,13 @@ public class Oltp1Driver
 		try
 		{
 
-			BenchmarkArgs cargs = new BenchmarkArgs();
+			BenchmarkArgs bargs = new BenchmarkArgs();
 
-			CommandLine cmd = new CommandLine(cargs);
+			CommandLine cmd = new CommandLine(bargs);
 			cmd.registerConverter(DbEngine.class, new CaseInsensitiveEnumConverter());
 			cmd.parseArgs(args);
 
-			System.out.println(cargs.toString());
+			System.out.println(bargs.toString());
 
 			// String logLevel = false ? "WARN" : "ERROR";
 			//
@@ -59,9 +59,9 @@ public class Oltp1Driver
 			// LoggerFactory.getLogger("org.caudexorigo.perf.TxBase");
 			// txLogger.setLevel(Level.toLevel(logLevel, Level.ERROR)); // fallback to ERROR
 
-			final int clients = cargs.clients;
+			final int clients = bargs.clients;
 
-			SqlContext sqlCtx = cargs.engine.createSqlContext(cargs, clients);
+			SqlContext sqlCtx = bargs.engine.createSqlContext(bargs, clients);
 
 
 			final String dbInfo = getDbInfo(sqlCtx);
@@ -83,11 +83,11 @@ public class Oltp1Driver
 			// Trade-Result Heavy R/W 10%
 			// Trade-Update Medium R/W 2%
 
-			MixRunner txMixRunner = new MixRunner(dbInfo, clients);
+			MixRunner txMixRunner = new MixRunner(dbInfo, bargs);
 
-			final long totalDurationSec = cargs.duration;
+			final long totalDurationSec = bargs.duration;
 
-			if (cargs.is_baseline)
+			if (bargs.is_baseline)
 			{
 				txMixRunner.addTx(new TxBaseLine(sqlCtx), 1.0);
 				log.info("Running benchmark run");
