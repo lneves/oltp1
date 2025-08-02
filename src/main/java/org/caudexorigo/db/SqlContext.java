@@ -12,9 +12,7 @@ public class SqlContext
 
 	public static SqlContext buildSqlContext(String jdbcUrl, String jdbcDriver, int connections)
 	{
-		SqlEngine engine = Engine.detect(jdbcDriver, jdbcUrl);
-
-		//Engine.checkIfSupported(engine);
+		SqlEngine engine = SqlEngine.detect(jdbcDriver, jdbcUrl);
 
 		HikariConfig c = new HikariConfig();
 		c.setDriverClassName(jdbcDriver);
