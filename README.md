@@ -164,12 +164,13 @@ Here is an example of how to run a 10-minute (600 seconds) benchmark with 50 cli
 ./target/oltp1 \
     --host localhost \
     --port 5432 \
-    --user postgres \
+    --user tpce \
     --password "db_user_password" \
     --engine PGSQL \
     --clients 50 \
     --duration 600
 ```
+`--engine` can take `PGSQL|MSSQL|ORIOLEDB`
 
 ## Benchmark Details
 
