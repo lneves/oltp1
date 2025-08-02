@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
-set -eux
+set -eu
 cd $(dirname $0)
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Verification checks
+if ! command_exists sqlcmd; then
+    echo "Error: 'sqlcmd' command not found. Please ensure the Microsoft SQL Server command-line tools are installed and in your PATH." >&2
+    exit 1
+fi
+
+if ! command_exists bcp; then
+    echo "Error: 'bcp' command not found. Please ensure the Microsoft SQL Server command-line tools are installed and in your PATH." >&2
+    exit 1
+fi
 
 set -a
 source db.properties

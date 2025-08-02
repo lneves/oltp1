@@ -5,8 +5,8 @@ import org.caudexorigo.oltp1.tx.broker_volume.TxBrokerVolumeInput;
 public class BrokerVolumeInputGenerator
 {
 	// Constants from TxnHarnessStructs.h
-	private static final int MIN_BROKER_LIST_LEN = 20;
-	private static final int MAX_BROKER_LIST_LEN = 40;
+	private static final int BV_MIN_BROKER_LIST_LEN = 20;
+	private static final int BV_MAX_BROKER_LIST_LEN = 40;
 
 	private final BrokerSelector brokerSelector;
 	private final SectorSelector sectorSelector;
@@ -24,7 +24,7 @@ public class BrokerVolumeInputGenerator
 		CRandom crand = ThreadLocalCRandom.get();
 
 		// Determine the number of brokers to select.
-		int numBrokers = crand.rndIntRange(MIN_BROKER_LIST_LEN, MAX_BROKER_LIST_LEN);
+		int numBrokers = crand.rndIntRange(BV_MIN_BROKER_LIST_LEN, BV_MAX_BROKER_LIST_LEN);
 
 		// Adjust for small databases where the number of brokers might be less than the
 		// random number.

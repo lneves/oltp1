@@ -10,14 +10,14 @@ import org.caudexorigo.oltp1.tx.trade_order.TxTradeOrderInput;
 public class TradeOrderInputGenerator
 {
 	// Default values from DriverParamSettings.h for a compliant run
-	private static final int PERCENT_MARKET_TRADE = 60;
-	private static final int PERCENT_SECURITY_BY_SYMBOL = 60;
-	private static final int PERCENT_BUY_ORDERS = 50;
-	private static final int PERCENT_STOP_LOSS = 50;
-	private static final int PERCENT_LIFO = 35;
-	private static final int PERCENT_MARGIN_TRADE = 8;
-	private static final int PERCENT_EXECUTOR_IS_OWNER = 90;
-	private static final int PERCENT_ROLLBACK = 1;
+	private static final int TO_PERCENT_MARKET_TRADE = 60;
+	private static final int TO_PERCENT_SECURITY_BY_SYMBOL = 60;
+	private static final int TO_PERCENT_BUY_ORDERS = 50;
+	private static final int TO_PERCENT_STOP_LOSS = 50;
+	private static final int TO_PERCENT_LIFO = 35;
+	private static final int TO_PERCENT_MARGIN_TRADE = 8;
+	private static final int TO_PERCENT_EXECUTOR_IS_OWNER = 90;
+	private static final int TO_PERCENT_ROLLBACK = 1;
 
 	private final CustomerSelector customerSelector;
 	private final CompanySelector companySelector;
@@ -72,7 +72,7 @@ public class TradeOrderInputGenerator
 
 		// Determine who is executing the trade.
 		// For compliant runs, this is the account owner 90% of the time.
-		if (random.rndPercent(PERCENT_EXECUTOR_IS_OWNER))
+		if (random.rndPercent(TO_PERCENT_EXECUTOR_IS_OWNER))
 		{
 			AccountPermission acl = aclSelector.getAcl(input.acct_id, true);
 
@@ -92,7 +92,7 @@ public class TradeOrderInputGenerator
 		Company rndCompany = companySelector.randomCompany();
 
 		// Decide whether to identify the security by symbol or company name.
-		if (random.rndPercent(PERCENT_SECURITY_BY_SYMBOL))
+		if (random.rndPercent(TO_PERCENT_SECURITY_BY_SYMBOL))
 		{
 			input.symbol = rndCompany.getSymbol();
 		}
@@ -105,12 +105,12 @@ public class TradeOrderInputGenerator
 		// Generate trade details.
 		input.trade_qty = new int[] { 100, 200, 400, 800 }[random.rndIntRange(0, 3)];
 		input.requested_price = random.rndDoubleIncrRange(20.00, 30.00, 0.01);
-		input.is_lifo = random.rndPercent(PERCENT_LIFO);
-		input.roll_it_back = random.rndPercent(PERCENT_ROLLBACK);
+		input.is_lifo = random.rndPercent(TO_PERCENT_LIFO);
+		input.roll_it_back = random.rndPercent(TO_PERCENT_ROLLBACK);
 
 		// Determine the exact trade type (Market/Limit, Buy/Sell/Stop-Loss).
-		boolean isMarket = random.rndPercent(PERCENT_MARKET_TRADE);
-		boolean isBuy = random.rndPercent(PERCENT_BUY_ORDERS);
+		boolean isMarket = random.rndPercent(TO_PERCENT_MARKET_TRADE);
+		boolean isBuy = random.rndPercent(TO_PERCENT_BUY_ORDERS);
 
 		if (isBuy)
 		{
@@ -124,7 +124,7 @@ public class TradeOrderInputGenerator
 			}
 
 			// Margin trades are only possible on buys.
-			input.type_is_margin = random.rndPercent(PERCENT_MARGIN_TRADE);
+			input.type_is_margin = random.rndPercent(TO_PERCENT_MARGIN_TRADE);
 		}
 		else
 		{ // Is a Sell
@@ -136,7 +136,7 @@ public class TradeOrderInputGenerator
 			}
 			else
 			{ // Is a Limit Sell
-				input.trade_type = random.rndPercent(PERCENT_STOP_LOSS) ? TradeType.STOP_LOSS : TradeType.LIMIT_SELL;
+				input.trade_type = random.rndPercent(TO_PERCENT_STOP_LOSS) ? TradeType.STOP_LOSS : TradeType.LIMIT_SELL;
 			}
 		}
 

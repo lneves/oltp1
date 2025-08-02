@@ -6,8 +6,8 @@ import org.caudexorigo.oltp1.tx.customer_position.TxCustomerPositionInput;
 public class CustomerPositionInputGenerator
 {
 	// Default values from DriverParamSettings.h for a compliant run
-	private static final int PERCENT_BY_TAX_ID = 50;
-	private static final int PERCENT_GET_HISTORY = 50;
+	private static final int CP_PERCENT_BY_TAX_ID = 50;
+	private static final int CP_PERCENT_GET_HISTORY = 50;
 
 	private CustomerSelector customerSelector;
 
@@ -32,7 +32,7 @@ public class CustomerPositionInputGenerator
 		long customerId = customer.cId;
 
 		// Decide whether to identify the customer by tax_id or cust_id.
-		if (random.rndPercent(PERCENT_BY_TAX_ID))
+		if (random.rndPercent(CP_PERCENT_BY_TAX_ID))
 		{
 			// Use tax_id for the lookup.
 			txInput.tax_id = customerSelector.getTaxId(customerId);
@@ -44,7 +44,7 @@ public class CustomerPositionInputGenerator
 		}
 
 		// Decide whether to request the account history.
-		txInput.get_history = random.rndPercent(PERCENT_GET_HISTORY);
+		txInput.get_history = random.rndPercent(CP_PERCENT_GET_HISTORY);
 
 		// If getting history, select a random account index for that customer.
 		if (txInput.get_history)

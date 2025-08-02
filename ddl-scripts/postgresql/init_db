@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
-set -eux
+set -eu
 cd $(dirname $0)
+
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+
+if ! command_exists psql; then
+    echo "Error: 'psql' command not found. Please ensure the PostgreSQL client tools are installed and in your PATH." >&2
+    exit 1
+fi
+
 
 set -a
 source db.properties

@@ -5,7 +5,6 @@ import org.caudexorigo.oltp1.tx.trade_status.TxTradeStatusInput;
 
 public class TradeStatusInputGenerator
 {
-
 	private final CustomerSelector customerSelector;
 
 	public TradeStatusInputGenerator(CustomerSelector customerSelector)

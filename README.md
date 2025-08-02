@@ -151,10 +151,13 @@ Execute the benchmark using the `./target/oltp1` command. All parameters are pas
 | `-p`, `--port`      | The database server listening port.                                           |    No    | DB-specific |
 | `-U`, `--user`      | The username for the database connection.                                     |   **Yes** |   -     |
 | `-P`, `--password`  | The password for the database user.                                           |   **Yes** |   -     |
-| `-e`, `--engine`    | The database engine under test. Valid values: `PGSQL`, `MSSQL`.               |   **Yes** |   -     |
+| `-e`, `--engine`    | The database engine under test. Valid values: `PGSQL`, `MSSQL`, `ORIOLEDB`.   |   **Yes** |   -     |
 | `-d`, `--duration`  | The total duration of the test run in seconds.                                |   **Yes** |  `360`  |
 | `-c`, `--clients`   | The number of concurrent simulated clients/users.                             |   **Yes** |  `10`   |
 | `-b`, `--baseline`  | If present, runs a simple `SELECT 0;` query instead of the full transaction mix. |    No    | `false` |
+| `-w`, `--wait-time`  | If present, enables pacing to control the transaction rate. |    No    | `false` |
+| `-tps`  | Target transactions per second for pacing. |    No    | `10` |
+
 
 ### Example Usage
 
@@ -217,26 +220,26 @@ Below is an example of the output from a successful benchmark run against a Post
 
 PostgreSQL 17.5 (Debian 17.5-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
 
-Date: 2025-07-31T00:02:48+01:00
+Date: 2025-08-02T22:27:41.901353
 
-                                             ----------- Response Time(ms) ----------
-Transaction          Target(%) Actual(%)     Mean   StdDev      Min      Max    Pct90     Count  Warnings  Errors  Rollbacks  Rate(tx/sec)
-Broker-Volume             4.90      5.02    11.15     8.33     1.63   102.15    22.00      4766         0       0          0        155.56
-Customer-Position        13.00     13.08     9.85     7.06     2.06   118.19    17.11     12425         0       0          0        405.53
-Market-Watch             18.00     17.99    11.08     8.00     1.81   110.51    20.23     17085         0       0          0        557.55
-Security-Detail          14.00     13.95    16.76     9.49     4.83   182.26    27.20     13256         0       0          0        432.62
-Trade-Lookup              8.00      7.99    13.57     7.99     1.64    92.95    23.11      7590         0       0          0        247.71
-Trade-Status             19.00     19.06     8.41     6.17     2.62   124.14    14.51     18104         0       0          0        590.93
-Trade-Order              10.10     10.15    37.49    25.70     7.46   179.16    72.97      9643         0       0         90        314.68
-Trade-Result             10.00      9.81    25.40    11.11     8.05   134.08    38.98      9315         0       0          0        304.83
-Market-Feed               1.00      0.97    30.53    11.97     7.77   132.46    44.42       922         0       0          0         30.25
-Trade-Update              2.00      1.99    27.31    11.56    10.48   156.61    40.93      1887         0       0          0         61.57
-Data-Maintenance          0.00      0.00    12.10     0.00    12.10    12.10    12.10         1         0       0          0         82.65
+                                                            ----------- Response Time(ms) ----------
+Transaction          Target(%) Actual(%)  Rate(tx/sec)     Mean   StdDev      Min      Max    Pct90     Count  Warnings  Errors  Rollbacks
+Broker-Volume             4.90      4.81         41.34    27.21    15.18    15.09   246.50    33.95      1410         0       0          0
+Customer-Position        13.00     12.88        110.65    33.99    15.18    19.39   316.39    40.74      3774         0       0          0
+Market-Watch             18.00     18.45        158.53    23.04    12.46    13.22   282.99    26.72      5407         0       0          0
+Security-Detail          14.00     13.84        118.92    57.19    19.59    41.90   361.53    71.85      4056         0       0          0
+Trade-Lookup              8.00      8.13         69.90    51.66    18.87    16.11   370.30    61.90      2384         0       0          0
+Trade-Status             19.00     18.55        159.38    28.04    12.78    19.35   268.15    30.37      5436         0       0          0
+Trade-Order              10.10     10.10         86.76   157.64    59.02    54.49   521.93   218.05      2959         0       0         30
+Trade-Result             10.00     10.25         88.05   100.26    26.13    59.71   446.88   115.44      3003         0       0          0
+Market-Feed               1.00      1.03          8.83    50.45    14.96    23.13   116.38    69.13       301         0       0          0
+Trade-Update              2.00      1.98         16.98    78.41    15.70    44.64   265.67    91.44       579         0       0          0
+Data-Maintenance          0.00      0.00          0.03    32.12     0.00    32.12    32.12    32.12         1         0       0          0
 
-Run time: 31 sec.
+Run time: 34 sec.
 Clients: 40
-Total Tx: 94994
-Tx Rate: 3099.55 tx/sec
+Total Tx: 29310
+Tx Rate: 859.36 tx/sec
 ```
 
 ### Baseline Query Benchmark
