@@ -1,0 +1,33 @@
+package org.caudexorigo.oltp1.tx.trade_order;
+
+import java.util.Map;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+import org.caudexorigo.perf.TxOutput;
+
+public class TxTradeOrderOutput extends TxOutput
+{
+	public Map<String, Object> output;
+	public int num_found;
+
+	public TxTradeOrderOutput()
+	{
+		this(0);
+	}
+
+	public TxTradeOrderOutput(int status)
+	{
+		super(status);
+	}
+
+	@Override
+	public String toString()
+	{
+		return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+				.append("output", output)
+				.append("tx_status", getStatus())
+				.append("tx_status_message", getStatusMessage())
+				.toString();
+	}
+}

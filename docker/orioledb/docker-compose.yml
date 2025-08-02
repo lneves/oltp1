@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: orioledb/orioledb:beta11-pg17-ubuntu
+    container_name: orioledb_oltp
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: P@ssW0rd
+      POSTGRES_DB: main_db
+    volumes:
+      - type: bind
+        source: ./custom_postgresql.conf
+        target: /etc/postgresql/postgresql.conf
+      - type: bind
+        source: ./custom_pg_hba.conf
+        target: /etc/postgresql/pg_hba.conf
+      - /disk1/db/orioledb:/var/lib/postgresql/data
+      - /disk2/db/orioledb:/pg_tblsp_data
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    depends_on:
+      - postgres_setup
+
+  postgres_setup:
+    image: postgres:17.5
+    user: root
+    volumes:
+      - /disk1/db/orioledb:/var/lib/postgresql/data
+      - /disk2/db/orioledb:/pg_tblsp_data
+    entrypoint: [ "bash", "-c", "chown -R 999:999 /pg_tblsp_data && chmod 750 -R /var/lib/postgresql/data && chmod 750 -R /pg_tblsp_data"] 

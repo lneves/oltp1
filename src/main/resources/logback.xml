@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<appender class="ch.qos.logback.core.ConsoleAppender" name="ConsoleAppender">
+		<encoder>
+			<!-- pattern>%5p #%C# - %m%n</pattern -->
+			<pattern>%m%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger level="error" additivity="false" name="org.apache">
+		<appender-ref ref="ConsoleAppender" />
+	</logger>
+
+	<logger level="error" additivity="false" name="com.zaxxer.hikari">
+		<appender-ref ref="ConsoleAppender" />
+	</logger>
+
+	<logger level="error" additivity="false" name="org.sql2o">
+		<appender-ref ref="ConsoleAppender" />
+	</logger>
+
+
+	<root level="info">
+		<appender-ref ref="ConsoleAppender" />
+	</root>
+
+</configuration>
