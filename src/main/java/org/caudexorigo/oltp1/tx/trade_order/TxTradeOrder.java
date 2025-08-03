@@ -51,7 +51,7 @@ public class TxTradeOrder extends TxBase
 
 	private final Set<Ticker> tickers = new HashSet<Ticker>();
 
-	private final ExecutorService asyncExecutor;
+	private final ExecutorService mee;
 
 	private final EnumSet<TradeType> isLimit = EnumSet
 			.of(
@@ -59,7 +59,7 @@ public class TxTradeOrder extends TxBase
 					TradeType.LIMIT_BUY,
 					TradeType.STOP_LOSS);
 
-	public TxTradeOrder(TxInputGenerator txInputGen, SqlContext sqlCtx, TxStatsCollector tradeResultStats, TxStatsCollector mktFeedStats, ExecutorService asyncExecutor)
+	public TxTradeOrder(TxInputGenerator txInputGen, SqlContext sqlCtx, TxStatsCollector tradeResultStats, TxStatsCollector mktFeedStats, ExecutorService mee)
 	{
 		super(new TxStatsCollector("Trade-Order"));
 
@@ -68,7 +68,7 @@ public class TxTradeOrder extends TxBase
 		this.txTradeResult = new TxTradeResult(sqlCtx, tradeResultStats);
 		this.txMarketFeed = new TxMarketFeed(sqlCtx, mktFeedStats);
 		this.sql = new DefaultTradeOrderQueries();
-		this.asyncExecutor = asyncExecutor;
+		this.mee = mee;
 
 		sql2o = sqlCtx.getSql2o();
 	}
@@ -155,7 +155,7 @@ public class TxTradeOrder extends TxBase
 					}
 				};
 
-				asyncExecutor.execute(tradeResultAction);
+				mee.execute(tradeResultAction);
 
 				Runnable mktFeedAction = new Runnable()
 				{
@@ -184,7 +184,7 @@ public class TxTradeOrder extends TxBase
 					}
 				};
 
-				asyncExecutor.execute(mktFeedAction);
+				mee.execute(mktFeedAction);
 			}
 		}
 		catch (Throwable t)

@@ -98,7 +98,7 @@ public class Oltp1Driver
 				final TxInputGenerator txInputGen = new TxInputGenerator(sqlCtx);
 
 				int asyncPoolSize = calculatePoolSize(clients);
-				final ExecutorService asyncExecutor = ThreadPoolBuilder.newThreadPool(asyncPoolSize, "run-async");
+				final ExecutorService mee = ThreadPoolBuilder.newThreadPool(asyncPoolSize, "run-async");
 
 				log.info("Run Trade-Cleanup before test run");
 
@@ -119,7 +119,7 @@ public class Oltp1Driver
 				TxStatsCollector tradeResultStats = new TxStatsCollector("Trade-Result");
 				TxStatsCollector mktFeedStats = new TxStatsCollector("Market-Feed");
 
-				txMixRunner.addTx(new TxTradeOrder(txInputGen, sqlCtx, tradeResultStats, mktFeedStats, asyncExecutor), 0.101);
+				txMixRunner.addTx(new TxTradeOrder(txInputGen, sqlCtx, tradeResultStats, mktFeedStats, mee), 0.101);
 				txMixRunner.addTx(new TxVoid(tradeResultStats), 0.1); // placeholder for TradeResult
 				txMixRunner.addTx(new TxVoid(mktFeedStats), 0.01); // placeholder for MarketFeed
 
@@ -138,8 +138,8 @@ public class Oltp1Driver
 				log.info("Starting measurement run");
 				txMixRunner.runTxMix(measureDurationSec);
 
-				// Shut down the ExecutorService at the end of the run
-				closeAsyncExec(asyncExecutor);
+
+				closeAsyncExec(mee);
 			}
 
 			TxRunSummary runSummary = txMixRunner.buildSummary();
