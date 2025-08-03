@@ -2,17 +2,14 @@
 set -eu
 cd $(dirname $0)
 
-
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
-
 
 if ! command_exists psql; then
     echo "Error: 'psql' command not found. Please ensure the PostgreSQL client tools are installed and in your PATH." >&2
     exit 1
 fi
-
 
 set -a
 source db.properties
@@ -23,27 +20,38 @@ if [ ! -d "$LOAD_DATA_DIR" ]; then
   exit 1
 fi
 
-
 PSQL="psql --username=${DB_USER} -d postgres -h ${DB_SERVER_HOST} -w"
 
 PSQL_TPCE="psql --username=tpce -q -h ${DB_SERVER_HOST} -p 5432 -d tpce -v ON_ERROR_STOP=1 -w"
 
+export PGPASSWORD=${DB_PASSWORD}
+
+OLTP1_ENV=$($PSQL -Atc "SHOW oltp1.environment;" 2>/dev/null || true)
 
 
 function drop_db {
 echo "drop tpce database"
 $PSQL -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname = 'tpce' AND pid <> pg_backend_pid();"
 $PSQL -c "DROP DATABASE IF EXISTS tpce;"
-$PSQL -c "DROP TABLESPACE IF EXISTS tblsp_tpce;"
-$PSQL -c "DROP ROLE IF EXISTS tpce;"
 
+if [[ "$OLTP1_ENV" == "docker" ]]; then
+    echo "Running in provided Docker."
+    $PSQL -c "DROP TABLESPACE IF EXISTS tblsp_tpce;"
+fi
+$PSQL -c "DROP ROLE IF EXISTS tpce;"
 }
 
 function create_db {
 echo "create tpce database"
 $PSQL -c "CREATE ROLE tpce WITH LOGIN PASSWORD '${TPCE_PASSWORD}';"
-$PSQL -c "CREATE TABLESPACE tblsp_tpce OWNER tpce LOCATION '/mnt/tablespaces/tblsp_tpce';"
-$PSQL -c "CREATE DATABASE tpce WITH OWNER=tpce TABLESPACE=tblsp_tpce;"
+
+if [[ "$OLTP1_ENV" == "docker" ]]; then
+  echo "Running in provided Docker."
+  $PSQL -c "CREATE TABLESPACE tblsp_tpce OWNER tpce LOCATION '/mnt/tablespaces/tblsp_tpce';"
+  $PSQL -c "CREATE DATABASE tpce WITH OWNER=tpce TABLESPACE=tblsp_tpce;"
+else
+  $PSQL -c "CREATE DATABASE tpce WITH OWNER=tpce"
+fi
 }
 
 
@@ -84,18 +92,18 @@ $PSQL_TPCE -a -c "\copy zip_code FROM '${LOAD_DATA_DIR}/ZipCode.txt' DELIMITER '
 }
 
 
+
 begin=$(date +%s)
 
-# export PGPASSWORD=${DB_PASSWORD}
-
-# drop_db
-# create_db
+drop_db
+create_db
 
 export PGPASSWORD=${TPCE_PASSWORD}
+time $PSQL_TPCE -a -f ./1_create_table.sql
 
-# time $PSQL_TPCE -a -f ./1_create_table.sql
-# time load_data
-# time $PSQL_TPCE -a -f ./3_create_keys.sql
+time load_data
+
+time $PSQL_TPCE -a -f ./3_create_keys.sql
 time $PSQL_TPCE -a -f ./4_create_index.sql
 time $PSQL_TPCE -a -f ./5_create_fk.sql
 time $PSQL_TPCE -a -f ./6_create_sequence.sql
