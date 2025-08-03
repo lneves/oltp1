@@ -2,10 +2,6 @@ package org.caudexorigo.perf;
 
 
 import org.caudexorigo.db.SqlContext;
-import org.caudexorigo.perf.ErrorAnalyser;
-import org.caudexorigo.perf.TxBase;
-import org.caudexorigo.perf.TxOutput;
-import org.caudexorigo.perf.TxStatsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sql2o.Connection;

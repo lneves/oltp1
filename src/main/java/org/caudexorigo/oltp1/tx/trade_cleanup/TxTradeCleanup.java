@@ -81,9 +81,9 @@ public class TxTradeCleanup extends TxBase
 		catch (Throwable t)
 		{
 			Throwable r = ErrorAnalyser.findRootCause(t);
-			log.error("Trade-Cleanup failed: {}", r.getMessage(), r);
 			txOutput.setStatus(-1);
 			txOutput.setStatusMessage(r.getMessage());
+			writeLog(log, r);
 		}
 		return txOutput;
 	}

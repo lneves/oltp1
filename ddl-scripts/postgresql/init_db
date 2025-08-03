@@ -29,6 +29,7 @@ PSQL="psql --username=${DB_USER} -d postgres -h ${DB_SERVER_HOST} -w"
 PSQL_TPCE="psql --username=tpce -q -h ${DB_SERVER_HOST} -p 5432 -d tpce -v ON_ERROR_STOP=1 -w"
 
 
+
 function drop_db {
 echo "drop tpce database"
 $PSQL -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname = 'tpce' AND pid <> pg_backend_pid();"
@@ -87,6 +88,7 @@ $PSQL_TPCE -a -c "\copy zip_code FROM '${LOAD_DATA_DIR}/ZipCode.txt' DELIMITER '
 begin=$(date +%s)
 
 export PGPASSWORD=${DB_PASSWORD}
+
 drop_db
 create_db
 

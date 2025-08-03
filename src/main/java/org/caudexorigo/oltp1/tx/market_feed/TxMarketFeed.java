@@ -124,9 +124,9 @@ public class TxMarketFeed extends TxBase
 		catch (Throwable t)
 		{
 			Throwable r = ErrorAnalyser.findRootCause(t);
-			log.error(r.getMessage(), r);
 			txOutput.setStatus(-1);
 			txOutput.setStatusMessage(r.getMessage());
+			writeLog(log, r);
 		}
 
 		if (num_updated < unique_symbols)

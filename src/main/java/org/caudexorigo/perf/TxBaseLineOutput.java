@@ -1,7 +1,5 @@
 package org.caudexorigo.perf;
 
-import org.caudexorigo.perf.TxOutput;
-
 public class TxBaseLineOutput extends TxOutput
 {
 	public TxBaseLineOutput(int status)

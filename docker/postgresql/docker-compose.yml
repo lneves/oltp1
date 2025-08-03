@@ -11,9 +11,11 @@ services:
       - type: bind
         source: ./custom_postgresql.conf
         target: /etc/postgresql/postgresql.conf
+        read_only: true
       - type: bind
         source: ./custom_pg_hba.conf
         target: /etc/postgresql/pg_hba.conf
+        read_only: true
       - type: bind
         source: ${PGDATA_HOST_PATH:-./pgdata}
         target: /var/lib/postgresql/data
@@ -21,5 +23,6 @@ services:
         source: ${TABLESPACE_HOST_PATH:-./pg_tablespaces}
         target: /mnt/tablespaces
       - ./init:/docker-entrypoint-initdb.d
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     ports:
       - ${PG_PORT:-5432}:5432

@@ -2,6 +2,7 @@
 set -eu
 cd $(dirname $0)
 
+
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
@@ -11,6 +12,7 @@ if ! command_exists psql; then
     echo "Error: 'psql' command not found. Please ensure the PostgreSQL client tools are installed and in your PATH." >&2
     exit 1
 fi
+
 
 set -a
 source db.properties
@@ -25,6 +27,7 @@ fi
 PSQL="psql --username=${DB_USER} -d postgres -h ${DB_SERVER_HOST} -w"
 
 PSQL_TPCE="psql --username=tpce -q -h ${DB_SERVER_HOST} -p 5432 -d tpce -v ON_ERROR_STOP=1 -w"
+
 
 
 function drop_db {
@@ -83,16 +86,16 @@ $PSQL_TPCE -a -c "\copy zip_code FROM '${LOAD_DATA_DIR}/ZipCode.txt' DELIMITER '
 
 begin=$(date +%s)
 
-export PGPASSWORD=${DB_PASSWORD}
-drop_db
-create_db
+# export PGPASSWORD=${DB_PASSWORD}
+
+# drop_db
+# create_db
 
 export PGPASSWORD=${TPCE_PASSWORD}
-time $PSQL_TPCE -a -f ./1_create_table.sql
 
-time load_data
-
-time $PSQL_TPCE -a -f ./3_create_keys.sql
+# time $PSQL_TPCE -a -f ./1_create_table.sql
+# time load_data
+# time $PSQL_TPCE -a -f ./3_create_keys.sql
 time $PSQL_TPCE -a -f ./4_create_index.sql
 time $PSQL_TPCE -a -f ./5_create_fk.sql
 time $PSQL_TPCE -a -f ./6_create_sequence.sql

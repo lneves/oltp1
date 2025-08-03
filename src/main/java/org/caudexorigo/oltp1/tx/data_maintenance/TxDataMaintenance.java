@@ -263,10 +263,11 @@ public class TxDataMaintenance extends TxBase
 		}
 		catch (Throwable t)
 		{
+			log.error("Data-Maintenance transaction failed for table '{}'", txInput.table_name);
 			Throwable r = ErrorAnalyser.findRootCause(t);
-			log.error("Data-Maintenance transaction failed for table '{}': {}", txInput.table_name, r.getMessage(), r);
 			txOutput.setStatus(-1);
 			txOutput.setStatusMessage(r.getMessage());
+			writeLog(log, r);
 		}
 		return txOutput;
 	}

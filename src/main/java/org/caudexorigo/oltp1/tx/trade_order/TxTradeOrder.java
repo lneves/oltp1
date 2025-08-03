@@ -190,9 +190,9 @@ public class TxTradeOrder extends TxBase
 		catch (Throwable t)
 		{
 			Throwable r = ErrorAnalyser.findRootCause(t);
-			log.error(r.getMessage(), r);
-			log.error(session.toString());
 			txOutput.setStatus(-1);
+			txOutput.setStatusMessage(r.getMessage());
+			writeLog(log, r);
 		}
 
 		return txOutput;

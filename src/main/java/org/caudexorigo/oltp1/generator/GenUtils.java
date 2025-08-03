@@ -126,9 +126,4 @@ public class GenUtils
 
 		return resultDate;
 	}
-	
-	public static void main(String[] args)
-	{
-		System.out.println(endOfInitialTrades(301));
-	}
 }
