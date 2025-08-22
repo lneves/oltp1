@@ -37,7 +37,7 @@ jobs:
 
       - name: Build (Maven native profile)
         run: |
-          mvn clean -q -DskipTests package
+          mvn clean -q -Pnative -DskipTests package
           jar tf target/oltp1.jar | grep '^META-INF/native-image/' || true
 
       # Package both executables into one tar.gz per OS
