@@ -1,0 +1,18 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: ${MSSQL_CONTAINER_NAME:-mssql_oltp1}
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${MSSQL_ADMIN_PASSWORD}
+      - MSSQL_DATA_DIR=/var/opt/mssql/data
+      - MSSQL_LOG_DIR=/var/opt/mssql/logs
+    ports:
+      - ${MSSQL_PORT:-1433}:1433
+    volumes:
+      - type: bind
+        source: ${MSSQL_DATA_HOST_PATH:-./mssql_data}
+        target: /var/opt/mssql/data
+      - type: bind
+        source: ${MSSQL_LOG_HOST_PATH:-./mssql_logs}
+        target: /var/opt/mssql/logs

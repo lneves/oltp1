@@ -1,0 +1,516 @@
+{
+  "reflection": [
+    {
+      "type": "[F"
+    },
+    {
+      "type": "[Lcom.zaxxer.hikari.util.ConcurrentBag$IConcurrentBagEntry;"
+    },
+    {
+      "type": "[Ljava.lang.Float;"
+    },
+    {
+      "type": "[Ljava.sql.Statement;"
+    },
+    {
+      "type": "ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.classic.joran.SerializedModelConfigurator",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.classic.spi.LogbackServiceProvider"
+    },
+    {
+      "type": "ch.qos.logback.classic.util.DefaultJoranConfigurator",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.ConsoleAppender",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setTarget",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.OutputStreamAppender",
+      "methods": [
+        {
+          "name": "setEncoder",
+          "parameterTypes": [
+            "ch.qos.logback.core.encoder.Encoder"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.encoder.Encoder"
+    },
+    {
+      "type": "ch.qos.logback.core.encoder.LayoutWrappingEncoder",
+      "methods": [
+        {
+          "name": "setParent",
+          "parameterTypes": [
+            "ch.qos.logback.core.spi.ContextAware"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.pattern.PatternLayoutEncoderBase",
+      "methods": [
+        {
+          "name": "setPattern",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.spi.ContextAware"
+    },
+    {
+      "type": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    },
+    {
+      "type": "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.zaxxer.hikari.HikariConfig",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.zaxxer.hikari.pool.PoolBase",
+      "fields": [
+        {
+          "name": "catalog"
+        }
+      ]
+    },
+    {
+      "type": "com.zaxxer.hikari.pool.PoolEntry",
+      "fields": [
+        {
+          "name": "state"
+        }
+      ]
+    },
+    {
+      "type": "groovy.lang.Closure"
+    },
+    {
+      "type": "java.lang.Object",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.Socket"
+    },
+    {
+      "type": "java.nio.file.Path"
+    },
+    {
+      "type": "java.nio.file.Paths",
+      "methods": [
+        {
+          "name": "get",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.sql.Connection"
+    },
+    {
+      "type": "java.sql.Driver"
+    },
+    {
+      "type": "java.sql.DriverManager"
+    },
+    {
+      "type": "java.sql.Time"
+    },
+    {
+      "type": "java.sql.Timestamp"
+    },
+    {
+      "type": "java.time.Duration"
+    },
+    {
+      "type": "java.time.Instant"
+    },
+    {
+      "type": "java.time.LocalDate"
+    },
+    {
+      "type": "java.time.LocalDateTime"
+    },
+    {
+      "type": "java.time.LocalTime"
+    },
+    {
+      "type": "java.time.MonthDay"
+    },
+    {
+      "type": "java.time.OffsetDateTime"
+    },
+    {
+      "type": "java.time.OffsetTime"
+    },
+    {
+      "type": "java.time.Period"
+    },
+    {
+      "type": "java.time.Year"
+    },
+    {
+      "type": "java.time.YearMonth"
+    },
+    {
+      "type": "java.time.ZoneId"
+    },
+    {
+      "type": "java.time.ZoneOffset"
+    },
+    {
+      "type": "java.time.ZonedDateTime"
+    },
+    {
+      "type": "jdk.net.ExtendedSocketOptions",
+      "fields": [
+        {
+          "name": "TCP_KEEPIDLE"
+        },
+        {
+          "name": "TCP_KEEPINTERVAL"
+        }
+      ]
+    },
+    {
+      "type": "org.mariadb.jdbc.Configuration",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.mariadb.jdbc.Configuration$Builder",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "password",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "user",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.mariadb.jdbc.Driver",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.BigDecimalCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.BigIntegerCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.BitSetCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.BlobCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.BooleanCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.ByteArrayCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.ByteCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.ClobCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.DateCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.DoubleCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.DurationCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.FloatArrayCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.FloatCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.FloatObjectArrayCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.GeometryCollectionCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.InstantCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.IntCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.LineStringCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.LocalDateCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.LocalDateTimeCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.LocalTimeCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.LongCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.MultiLinestringCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.MultiPointCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.MultiPolygonCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.OffsetDateTimeCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.PointCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.PolygonCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.ReaderCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.ShortCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.StreamCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.StringCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.TimeCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.TimestampCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.UuidCodec"
+    },
+    {
+      "type": "org.mariadb.jdbc.plugin.codec.ZonedDateTimeCodec"
+    },
+    {
+      "type": "org.oltp1.Main",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.oltp1.egen.EGenLoader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.oltp1.initdb.DbInitRunner",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.oltp1.runner.Oltp1Driver",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.postgresql.Driver"
+    },
+    {
+      "type": "org.slf4j.Logger"
+    },
+    {
+      "type": "org.slf4j.LoggerFactory"
+    },
+    {
+      "type": "org.sql2o.quirks.PostgresQuirksProvider"
+    },
+    {
+      "type": "picocli.CommandLine$AutoHelpMixin",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "sun.security.provider.NativePRNG",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.security.SecureRandomParameters"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": {
+        "proxy": [
+          "java.sql.Connection"
+        ]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "glob": "META-INF/services/ch.qos.logback.classic.spi.Configurator"
+    },
+    {
+      "glob": "META-INF/services/java.lang.System$LoggerFinder"
+    },
+    {
+      "glob": "META-INF/services/java.sql.Driver"
+    },
+    {
+      "glob": "META-INF/services/java.time.zone.ZoneRulesProvider"
+    },
+    {
+      "glob": "META-INF/services/java.util.spi.ResourceBundleControlProvider"
+    },
+    {
+      "glob": "META-INF/services/javax.xml.parsers.SAXParserFactory"
+    },
+    {
+      "glob": "META-INF/services/org.mariadb.jdbc.plugin.Codec"
+    },
+    {
+      "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
+    },
+    {
+      "glob": "META-INF/services/org.sql2o.quirks.QuirksProvider"
+    },
+    {
+      "glob": "com/microsoft/sqlserver/jdbc/SQLServerResource_en.properties"
+    },
+    {
+      "glob": "com/microsoft/sqlserver/jdbc/SQLServerResource_en_PT.properties"
+    },
+    {
+      "glob": "ddl-scripts/mariadb/1_create_table.sql"
+    },
+    {
+      "glob": "ddl-scripts/mariadb/3_create_index_fk.sql"
+    },
+    {
+      "glob": "ddl-scripts/mariadb/4_create_sequence.sql"
+    },
+    {
+      "glob": "ddl-scripts/mariadb/5_db_settings.sql"
+    },
+    {
+      "glob": "logback-test.scmo"
+    },
+    {
+      "glob": "logback-test.xml"
+    },
+    {
+      "glob": "logback.scmo"
+    },
+    {
+      "glob": "logback.xml"
+    },
+    {
+      "glob": "mariadb.properties"
+    },
+    {
+      "module": "java.xml",
+      "glob": "jdk/xml/internal/jdkcatalog/JDKCatalog.xml"
+    }
+  ],
+  "bundles": [
+    {
+      "name": "com.microsoft.sqlserver.jdbc.SQLServerResource",
+      "locales": [
+        "en-PT"
+      ]
+    }
+  ],
+  "jni": [
+    {
+      "type": "java.lang.Boolean",
+      "methods": [
+        {
+          "name": "getBoolean",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    }
+  ]
+}

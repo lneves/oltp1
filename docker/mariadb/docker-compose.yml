@@ -1,0 +1,25 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: ${MARIADB_CONTAINER_NAME:-mariadb_oltp1}
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_ROOT_HOST: '%'
+    ports:
+      - ${MARIADB_PORT:-3306}:3306
+    volumes:
+      - type: bind
+        source: ./custom_my.cnf
+        target: /etc/mysql/my.cnf # custom config
+        read_only: true
+      - type: bind
+        source: ${MARIADB_MAIN_DATA_PATH:-./mariadb_data}
+        target: /var/lib/mysql
+      - type: bind
+        source: ${MARIADB_AUX_DATA_PATH:-./mariadb_aux_data}
+        target: /aux_data
+    entrypoint: ["/bin/sh","-lc",
+      "mkdir -p /aux_data/innodb_data/logs /aux_data/innodb_logs/undo /aux_data/binlogs /aux_data/tmp_mysql
+       && chown -R mysql:mysql /aux_data
+       && exec docker-entrypoint.sh mysqld"]

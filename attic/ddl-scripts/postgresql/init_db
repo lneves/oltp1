@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -eu
+cd $(dirname $0)
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+if ! command_exists psql; then
+    echo "Error: 'psql' command not found. Please ensure the PostgreSQL client tools are installed and in your PATH." >&2
+    exit 1
+fi
+
+set -a
+source db.properties
+set +a
+
+if [ ! -d "$LOAD_DATA_DIR" ]; then
+  echo "!Error! Data directory: '${LOAD_DATA_DIR}' does not exist."
+  exit 1
+fi
+
+PSQL="psql --username=${DB_USER} -d postgres -h ${DB_SERVER_HOST} -w"
+
+PSQL_TPCE="psql --username=tpce -q -h ${DB_SERVER_HOST} -p 5432 -d tpce -v ON_ERROR_STOP=1 -w"
+
+export PGPASSWORD=${DB_PASSWORD}
+
+OLTP1_ENV=$($PSQL -Atc "SHOW oltp1.environment;" 2>/dev/null || true)
+
+
+function drop_db {
+echo "drop tpce database"
+$PSQL -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname = 'tpce' AND pid <> pg_backend_pid();"
+$PSQL -c "DROP DATABASE IF EXISTS tpce;"
+
+if [[ "$OLTP1_ENV" == "docker" ]]; then
+    echo "Running in provided Docker."
+    $PSQL -c "DROP TABLESPACE IF EXISTS tblsp_tpce;"
+fi
+$PSQL -c "DROP ROLE IF EXISTS tpce;"
+}
+
+function create_db {
+echo "create tpce database"
+$PSQL -c "CREATE ROLE tpce WITH LOGIN PASSWORD '${TPCE_PASSWORD}';"
+
+if [[ "$OLTP1_ENV" == "docker" ]]; then
+  echo "Running in provided Docker."
+  $PSQL -c "CREATE TABLESPACE tblsp_tpce OWNER tpce LOCATION '/mnt/tablespaces/tblsp_tpce';"
+  $PSQL -c "CREATE DATABASE tpce WITH OWNER=tpce TABLESPACE=tblsp_tpce;"
+else
+  $PSQL -c "CREATE DATABASE tpce WITH OWNER=tpce"
+fi
+}
+
+
+function load_data {
+echo "load table data"
+$PSQL_TPCE -a -c "\copy account_permission FROM '${LOAD_DATA_DIR}/AccountPermission.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy customer FROM '${LOAD_DATA_DIR}/Customer.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy customer_account FROM '${LOAD_DATA_DIR}/CustomerAccount.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy customer_taxrate FROM '${LOAD_DATA_DIR}/CustomerTaxrate.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy holding FROM '${LOAD_DATA_DIR}/Holding.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy holding_history FROM '${LOAD_DATA_DIR}/HoldingHistory.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy holding_summary FROM '${LOAD_DATA_DIR}/HoldingSummary.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy watch_item FROM '${LOAD_DATA_DIR}/WatchItem.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy watch_list FROM '${LOAD_DATA_DIR}/WatchList.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy broker FROM '${LOAD_DATA_DIR}/Broker.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy cash_transaction FROM '${LOAD_DATA_DIR}/CashTransaction.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy charge FROM '${LOAD_DATA_DIR}/Charge.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy commission_rate FROM '${LOAD_DATA_DIR}/CommissionRate.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy settlement FROM '${LOAD_DATA_DIR}/Settlement.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy trade FROM '${LOAD_DATA_DIR}/Trade.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy trade_history FROM '${LOAD_DATA_DIR}/TradeHistory.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy trade_type FROM '${LOAD_DATA_DIR}/TradeType.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy company FROM '${LOAD_DATA_DIR}/Company.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy company_competitor FROM '${LOAD_DATA_DIR}/CompanyCompetitor.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy daily_market FROM '${LOAD_DATA_DIR}/DailyMarket.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy exchange FROM '${LOAD_DATA_DIR}/Exchange.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy financial FROM '${LOAD_DATA_DIR}/Financial.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy industry FROM '${LOAD_DATA_DIR}/Industry.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy last_trade FROM '${LOAD_DATA_DIR}/LastTrade.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy news_item FROM '${LOAD_DATA_DIR}/NewsItem.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy news_xref FROM '${LOAD_DATA_DIR}/NewsXRef.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy sector FROM '${LOAD_DATA_DIR}/Sector.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy security FROM '${LOAD_DATA_DIR}/Security.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy address FROM '${LOAD_DATA_DIR}/Address.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy status_type FROM '${LOAD_DATA_DIR}/StatusType.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy taxrate FROM '${LOAD_DATA_DIR}/TaxRate.txt' DELIMITER '|'"
+$PSQL_TPCE -a -c "\copy zip_code FROM '${LOAD_DATA_DIR}/ZipCode.txt' DELIMITER '|'"
+}
+
+
+
+begin=$(date +%s)
+
+drop_db
+create_db
+
+export PGPASSWORD=${TPCE_PASSWORD}
+time $PSQL_TPCE -a -f ./1_create_table.sql
+
+time load_data
+
+time $PSQL_TPCE -a -f ./3_create_keys.sql
+time $PSQL_TPCE -a -f ./4_create_index.sql
+time $PSQL_TPCE -a -f ./5_create_fk.sql
+time $PSQL_TPCE -a -f ./6_create_sequence.sql
+time $PSQL_TPCE -a -f ./7_analyze_table.sql
+time $PSQL_TPCE -a -f ./8_db_settings.sql
+
+end=$(date +%s)
+elapsed=$((end-begin))
+echo "setup took ${elapsed} seconds"

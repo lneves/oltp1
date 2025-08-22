@@ -1,0 +1,6 @@
+DB_SERVER_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_admin_user_password
+TPCE_USER=tpce
+TPCE_PASSWORD=your_benchmark_user_password
+LOAD_DATA_DIR=/path/to/dir/flat_out

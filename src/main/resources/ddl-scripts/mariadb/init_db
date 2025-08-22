@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# The script will:
+#   - Drop & (re)create the TPCE database
+#   - Create/ensure the TPCE user
+#   - Run SQL files 1_create_table.sql, 2_load_data.sql (if present), 3_create_index_fk.sql, etc.
+#     Files are optional; missing ones are skipped with a notice.
+#
+set -euo pipefail
+cd "$(dirname "$0")"
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+
+# Prefer the mariadb client if available; fall back to mysql.
+if command_exists mariadb; then
+  MYSQL_CLIENT="mariadb"
+elif command_exists mysql; then
+  MYSQL_CLIENT="mysql"
+else
+  echo "Error: neither 'mariadb' nor 'mysql' client was found in PATH." >&2
+  exit 1
+fi
+
+# Load connection properties
+set -a
+if [[ -f db.properties ]]; then
+  # shellcheck source=/dev/null
+  source db.properties
+else
+  echo "Warning: db.properties not found; using defaults + env vars." >&2
+fi
+set +a
+
+# Defaults
+DB_SERVER_HOST="${DB_SERVER_HOST:-127.0.0.1}"
+DB_PORT="${DB_PORT:-3306}"
+
+ADMIN_USER="${DB_USER:-root}"
+ADMIN_PASSWORD="${DB_PASSWORD:-}"
+
+TPCE_DB="${TPCE_DB:-tpce}"
+TPCE_USER="${TPCE_USER:-tpce}"
+TPCE_PASSWORD="${TPCE_PASSWORD:-}"
+
+# Common client options
+COMMON_OPTS=(--host="${DB_SERVER_HOST}" --port="${DB_PORT}" --protocol=TCP --batch --silent)
+
+# Build admin and app command lines (no password here; we pass via MYSQL_PWD)
+MYSQL_ADMIN=( "${MYSQL_CLIENT}" "${COMMON_OPTS[@]}" --user="${ADMIN_USER}")
+MYSQL_TPCE=( "${MYSQL_CLIENT}" "${COMMON_OPTS[@]}" --user="${TPCE_USER}" "${TPCE_DB}" )
+
+# Helpers to run commands with password without exposing it on the process list.
+run_admin() {
+  MYSQL_PWD="${ADMIN_PASSWORD}" "${MYSQL_ADMIN[@]}" "$@"
+}
+run_tpce() {
+  MYSQL_PWD="${TPCE_PASSWORD}" "${MYSQL_TPCE[@]}" "$@"
+}
+run_tpce_file() {
+  local file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo "Skipping missing file: $file"
+    return 0
+  fi
+  echo "Running $file"
+  # shellcheck disable=SC2094
+  MYSQL_PWD="${TPCE_PASSWORD}" "${MYSQL_TPCE[@]}" < "$file"
+}
+
+drop_db() {
+  echo "Dropping database \`${TPCE_DB}\` (if exists)..."
+  run_admin -e "DROP DATABASE IF EXISTS \`${TPCE_DB}\`;"
+}
+
+create_db_and_user() {
+  echo "Creating database \`${TPCE_DB}\` (if not exists)..."
+  run_admin -e "CREATE DATABASE IF NOT EXISTS \`${TPCE_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+  echo "Ensuring user '${TPCE_USER}' exists and has privileges..."
+  # Create user if not exists (works on MariaDB 10.4+; for older versions the IF NOT EXISTS may be ignored)
+  run_admin -e "CREATE USER IF NOT EXISTS '${TPCE_USER}'@'%' IDENTIFIED BY '${TPCE_PASSWORD}';" || true
+  # Also ensure localhost host entry, which is common in default auth setups
+  run_admin -e "CREATE USER IF NOT EXISTS '${TPCE_USER}'@'localhost' IDENTIFIED BY '${TPCE_PASSWORD}';" || true
+
+  run_admin -e "GRANT ALL PRIVILEGES ON \`${TPCE_DB}\`.* TO '${TPCE_USER}'@'%';"
+  run_admin -e "GRANT ALL PRIVILEGES ON \`${TPCE_DB}\`.* TO '${TPCE_USER}'@'localhost';"
+  run_admin -e "FLUSH PRIVILEGES;"
+}
+
+load_data() {
+  if [[ -f ./2_load_data.template ]]; then
+  	sed -e 's#:DATA_DIR:#'"${LOAD_DATA_DIR}"'#' 2_load_data.template > 2_load_data.sql
+  	echo "Running ./2_load_data.sql"
+    run_tpce --local-infile=1 < ./2_load_data.sql
+  else
+    echo "No 2_load_data.sql found; skipping data load."
+  fi
+}
+
+main() {
+  local begin
+  begin=$(date +%s)
+
+  echo "Using client: ${MYSQL_CLIENT}"
+  echo "Host: ${DB_SERVER_HOST}:${DB_PORT}  DB: ${TPCE_DB}  User: ${TPCE_USER}"
+
+  drop_db
+  create_db_and_user
+
+  # Run schema and setup scripts (skip missing)
+  run_tpce_file ./1_create_table.sql
+  load_data
+  run_tpce_file ./3_create_index_fk.sql
+  run_tpce_file ./4_create_sequence.sql
+  run_tpce_file ./5_db_settings.sql
+
+  local end elapsed
+  end=$(date +%s)
+  elapsed=$((end-begin))
+  echo "Setup took ${elapsed} seconds"
+}
+
+main "$@"

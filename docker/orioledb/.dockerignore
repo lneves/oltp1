@@ -1,0 +1,17 @@
+# Ignore local PostgreSQL volumes and metadata
+pgdata/
+pg_tablespaces/
+
+# Ignore OS cruft
+*.DS_Store
+Thumbs.db
+
+# Ignore Git and editor junk
+.git/
+*.swp
+*.log
+*.bak
+
+# Ignore env files with secrets
+.env
+env.example

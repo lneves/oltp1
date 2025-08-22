@@ -1,0 +1,8 @@
+DB_SERVER_HOST=localhost
+ADMIN_USER=sa
+ADMIN_PASSWORD=your_admin_user_password
+BENCH_USER=tpce
+BENCH_PASSWORD=your_benchark_user_password
+LOAD_DATA_DIR=/path/to/dir/flat_out
+MSSQL_DATA_DIR=/var/opt/mssql/data
+MSSQL_LOG_DIR=/var/opt/mssql/log

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -eu
+cd $(dirname $0)
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Verification checks
+if ! command_exists sqlcmd; then
+    echo "Error: 'sqlcmd' command not found. Please ensure the Microsoft SQL Server command-line tools are installed and in your PATH." >&2
+    exit 1
+fi
+
+if ! command_exists bcp; then
+    echo "Error: 'bcp' command not found. Please ensure the Microsoft SQL Server command-line tools are installed and in your PATH." >&2
+    exit 1
+fi
+
+set -a
+source db.properties
+set +a
+
+if [ ! -d "$LOAD_DATA_DIR" ]; then
+  echo "!Error! Data directory: '${LOAD_DATA_DIR}' does not exist."
+  exit 1
+fi
+
+
+SQLCMD="sqlcmd -b -S ${DB_SERVER_HOST} -U ${ADMIN_USER} -P ${ADMIN_PASSWORD} -C"
+BCP="bcp"
+BCP_ARGS="-c -t| -r 0x0A -S ${DB_SERVER_HOST} -d tpce -U ${BENCH_USER} -P ${BENCH_PASSWORD} -u"
+
+
+function load_data {
+echo "load table data"
+$BCP account_permission in ${LOAD_DATA_DIR}/AccountPermission.txt -k $BCP_ARGS
+$BCP address in ${LOAD_DATA_DIR}/Address.txt $BCP_ARGS
+$BCP broker in ${LOAD_DATA_DIR}/Broker.txt -k $BCP_ARGS
+$BCP cash_transaction in ${LOAD_DATA_DIR}/CashTransaction.txt -k $BCP_ARGS
+$BCP charge in ${LOAD_DATA_DIR}/Charge.txt -k $BCP_ARGS
+$BCP commission_rate in ${LOAD_DATA_DIR}/CommissionRate.txt -k $BCP_ARGS
+$BCP company in ${LOAD_DATA_DIR}/Company.txt -k $BCP_ARGS
+$BCP company_competitor in ${LOAD_DATA_DIR}/CompanyCompetitor.txt -k $BCP_ARGS
+$BCP customer in ${LOAD_DATA_DIR}/Customer.txt $BCP_ARGS
+$BCP customer_account in ${LOAD_DATA_DIR}/CustomerAccount.txt -k $BCP_ARGS
+$BCP customer_taxrate in ${LOAD_DATA_DIR}/CustomerTaxrate.txt -k $BCP_ARGS
+$BCP daily_market in ${LOAD_DATA_DIR}/DailyMarket.txt -k $BCP_ARGS
+$BCP exchange in ${LOAD_DATA_DIR}/Exchange.txt -k $BCP_ARGS
+$BCP financial in ${LOAD_DATA_DIR}/Financial.txt -k $BCP_ARGS
+$BCP holding in ${LOAD_DATA_DIR}/Holding.txt -k $BCP_ARGS
+$BCP holding_history in ${LOAD_DATA_DIR}/HoldingHistory.txt -k $BCP_ARGS
+$BCP holding_summary in ${LOAD_DATA_DIR}/HoldingSummary.txt -k $BCP_ARGS
+$BCP industry in ${LOAD_DATA_DIR}/Industry.txt -k $BCP_ARGS
+$BCP last_trade in ${LOAD_DATA_DIR}/LastTrade.txt -k $BCP_ARGS
+$BCP news_item in ${LOAD_DATA_DIR}/NewsItem.txt -k $BCP_ARGS
+$BCP news_xref in ${LOAD_DATA_DIR}/NewsXRef.txt -k $BCP_ARGS
+$BCP sector in ${LOAD_DATA_DIR}/Sector.txt -k $BCP_ARGS
+$BCP security in ${LOAD_DATA_DIR}/Security.txt -k $BCP_ARGS
+$BCP settlement in ${LOAD_DATA_DIR}/Settlement.txt -k $BCP_ARGS
+$BCP status_type in ${LOAD_DATA_DIR}/StatusType.txt -k $BCP_ARGS
+$BCP taxrate in ${LOAD_DATA_DIR}/TaxRate.txt -k $BCP_ARGS
+$BCP trade in ${LOAD_DATA_DIR}/Trade.txt -k -E $BCP_ARGS
+$BCP trade_history in ${LOAD_DATA_DIR}/TradeHistory.txt -k $BCP_ARGS
+$BCP trade_type in ${LOAD_DATA_DIR}/TradeType.txt -k $BCP_ARGS
+$BCP watch_item in ${LOAD_DATA_DIR}/WatchItem.txt -k $BCP_ARGS
+$BCP watch_list in ${LOAD_DATA_DIR}/WatchList.txt -k $BCP_ARGS
+$BCP zip_code in ${LOAD_DATA_DIR}/ZipCode.txt -k $BCP_ARGS
+}
+
+begin=$(date +%s)
+
+time $SQLCMD -i 0_create_database.sql
+time $SQLCMD -i 1_create_table.sql
+time load_data | grep -v "rows sent to SQL Server"
+time $SQLCMD -e -i 3_create_pk.sql
+time $SQLCMD -e -i 4_create_index.sql
+time $SQLCMD -e -i 5_create_fk.sql
+time $SQLCMD -e -i 6_create_sequence.sql
+time $SQLCMD -e -i 7_analyze_table.sql
+time $SQLCMD -e -i  8_db_settings.sql
+
+end=$(date +%s)
+elapsed=$((end-begin))
+echo "import took ${elapsed} seconds"

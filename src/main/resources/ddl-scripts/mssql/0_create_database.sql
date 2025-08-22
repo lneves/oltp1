@@ -1,0 +1,9 @@
+USE master;
+GO
+
+
+DROP DATABASE IF EXISTS tpce;
+GO
+
+CREATE DATABASE tpce; 
+GO

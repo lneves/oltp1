@@ -1,0 +1,1 @@
+SELECT SETVAL('trade_t_id_seq',(SELECT MAX(t_id) FROM trade));
