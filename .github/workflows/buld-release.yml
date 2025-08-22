@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p dist
           TARBALL="dist/oltp1-${{ runner.os }}-${{ runner.arch }}.tar.gz"
-          tar -czf "$TARBALL" -C target oltp1 1
+          tar -czf "$TARBALL" -C target oltp1
           # Create SHA-256 checksum file alongside the tarball
           HASH=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
           echo "$HASH  $(basename "$TARBALL")" > "$TARBALL.sha256"
