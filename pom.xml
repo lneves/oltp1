@@ -140,7 +140,7 @@ java ^
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.17.0</version>
+			<version>3.18.0</version>
 		</dependency>
 
 		<dependency>
@@ -157,7 +157,7 @@ java ^
 		<dependency>
 			<groupId>info.picocli</groupId>
 			<artifactId>picocli</artifactId>
-			<version>4.7.5</version>
+			<version>4.7.7</version>
 		</dependency>
 
 		<dependency>
@@ -193,7 +193,7 @@ java ^
 		<dependency>
 			<groupId>com.zaxxer</groupId>
 			<artifactId>HikariCP</artifactId>
-			<version>6.3.0</version>
+			<version>7.0.2</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.slf4j</groupId>
@@ -211,7 +211,7 @@ java ^
 		<dependency>
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
-			<version>13.1.0.jre11-preview</version>
+			<version>13.2.0.jre11</version>
 		</dependency>
 
 		<dependency>
@@ -242,14 +242,14 @@ java ^
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.18.0</version>
+			<version>5.19.0</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-junit-jupiter</artifactId>
-			<version>5.18.0</version>
+			<version>5.19.0</version>
 			<scope>test</scope>
 		</dependency>
 
