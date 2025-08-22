@@ -13,6 +13,8 @@ import org.oltp1.egen.util.TpcRandom;
  */
 public class NewsItemAndXrefTable
 {
+	private static final int NEWS_ITEM_MAX_DAYS_AGO = 50;
+	private static final int MSEC_PER_DAY = 86_400_000;
 	private static final int NEWS_ITEM_LEN = 100 * 1000;
 	private static final int RNG_SKIP_ONE_ROW_NEWS = 4 + NEWS_ITEM_LEN;
 	private static final int NEWS_ITEMS_PER_COMPANY = 2;
@@ -42,7 +44,7 @@ public class NewsItemAndXrefTable
 
 		this.hasMoreRecords = customerCount > 0;
 
-		this.newsBaseDate = new DateTime(2005, 1, 3);
+		this.newsBaseDate = new DateTime( 2005, 1, 3, 9, 0, 0, 0);
 		this.newsBaseDate.add(daysOfInitialTrades, 0, true);
 
 		this.itemsGeneratedForCurrentCompany = 0;
@@ -70,8 +72,8 @@ public class NewsItemAndXrefTable
 
 		generateNewsItemContent(currentNewsItemRow);
 
-		int daysAgo = random.rndIntRange(0, 50);
-		int msecAgo = random.rndIntRange(0, 86400000 - 1);
+		int daysAgo = random.rndIntRange(0, NEWS_ITEM_MAX_DAYS_AGO);
+		int msecAgo = random.rndIntRange(0, MSEC_PER_DAY);
 		currentNewsItemRow.NI_DTS = new DateTime(newsBaseDate);
 		currentNewsItemRow.NI_DTS.add(-daysAgo, -msecAgo, false);
 
