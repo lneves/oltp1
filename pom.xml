@@ -276,6 +276,7 @@ java ^
 								<enabled>true</enabled>
 							</metadataRepository>
 							<buildArgs>
+								<buildArg>-H:ConfigurationFileDirectories=${project.basedir}/src/main/resources/META-INF/native-image/org.caudexorigo.perf/oltp1</buildArg>
 								<buildArg>--no-fallback</buildArg>
 								<buildArg>-H:+AddAllCharsets</buildArg>
 							</buildArgs>
