@@ -84,7 +84,7 @@ There are three steps necessary to run the benchmark:
 2. Create the database schema **and** load the data.
 3. Run the benchmark driver.
 
-+*Step zero:* download the pre‑built binary from **Releases** and place it on your `PATH`.
+*Step zero:* download the pre‑built binary from **Releases** and place it on your `PATH`.
 
 You can run OLTP-1 either as a **native binary** or as a **fat JAR**:
 
@@ -97,7 +97,6 @@ Both distributions support the same commands and flags. The fat JAR is **often f
 ## Quickstart
 
 End‑to‑end example (PostgreSQL via local Docker):
-
 
 
 ```bash
