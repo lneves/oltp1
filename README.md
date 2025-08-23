@@ -86,6 +86,14 @@ There are three steps necessary to run the benchmark:
 
 +*Step zero:* download the pre‑built binary from **Releases** and place it on your `PATH`.
 
+You can run OLTP-1 either as a **native binary** or as a **fat JAR**:
+
+- **Native binary (recommended for most):** download the platform binary from **Releases** and invoke it as `oltp1 <command> [options]`.
+- **Fat JAR (requires Java 21+):** download the `oltp1.jar` from **Releases** and invoke it as `java -jar oltp1.jar <command> [options]`.
+
+Both distributions support the same commands and flags. The fat JAR is **often faster** for some operations (notably data generation) due to JVM JIT optimizations.
+
+
 ## Quickstart
 
 End‑to‑end example (PostgreSQL via local Docker):
@@ -102,6 +110,8 @@ docker compose up -d
 
 # Generate minimal dataset
 oltp1 egen -c 5000 -t 5000 -w 1 -o ./flat_out
+# …or equivalently, use the fat JAR:
+# java -jar oltp1.jar egen -c 5000 -t 5000 -w 1 -o ./flat_out
 
 # Initialize schema & load data (use env var for safety)
 export OLTP1_PASSWORD='<password>'
@@ -121,6 +131,9 @@ OLTP‑1 includes a port of the official data‑generation tool. To generate a d
 oltp1 egen -c 5000 -t 5000 -o flat_out
 ```
 Expected runtime: ~5–10 minutes for 5,000 customers and 300 trade days.
+> **Performance tip:** Generating flat files (`egen`) is **often faster** with the fat JAR:
+> `java -jar oltp1.jar egen ...`. If you’re creating large datasets, prefer the JAR.
+
 
 More options:
 
