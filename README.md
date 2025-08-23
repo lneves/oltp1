@@ -84,12 +84,12 @@ There are three steps necessary to run the benchmark:
 2. Create the database schema **and** load the data.
 3. Run the benchmark driver.
 
-*Step zero:* download the pre‑built binary from **Releases** and place it on your `PATH`.
+*Step zero:* download the pre‑built binary from **[Releases](https://github.com/lneves/oltp1/releases)** and place it on your `PATH`.
 
 You can run OLTP-1 either as a **native binary** or as a **fat JAR**:
 
-- **Native binary (recommended for most):** download the platform binary from **Releases** and invoke it as `oltp1 <command> [options]`.
-- **Fat JAR (requires Java 21+):** download the `oltp1.jar` from **Releases** and invoke it as `java -jar oltp1.jar <command> [options]`.
+- **Native binary (recommended for most):** download the platform binary from **[Releases](https://github.com/lneves/oltp1/releases)** and invoke it as `oltp1 <command> [options]`.
+- **Fat JAR (requires Java 21+):** download the `oltp1.jar` from **[Releases](https://github.com/lneves/oltp1/releases)** and invoke it as `java -jar oltp1.jar <command> [options]`.
 
 Both distributions support the same commands and flags. The fat JAR is **often faster** for some operations (notably data generation) due to JVM JIT optimizations.
 
@@ -97,7 +97,6 @@ Both distributions support the same commands and flags. The fat JAR is **often f
 ## Quickstart
 
 End‑to‑end example (PostgreSQL via local Docker):
-
 
 ```bash
 # clone repo and launch database
@@ -131,7 +130,7 @@ oltp1 egen -c 5000 -t 5000 -o flat_out
 ```
 Expected runtime: ~5–10 minutes for 5,000 customers and 300 trade days.
 > **Performance tip:** Generating flat files (`egen`) is **often faster** with the fat JAR:
-> `java -jar oltp1.jar egen ...`. If you’re creating large datasets, prefer the JAR.
+> `java -jar oltp1.jar egen…`. If you’re creating large datasets, prefer the JAR.
 
 
 More options:
