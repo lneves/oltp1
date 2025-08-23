@@ -40,6 +40,23 @@ jobs:
           mvn clean -q -Pnative -DskipTests package
           jar tf target/oltp1.jar | grep '^META-INF/native-image/' || true
 
+      - name: Smoke test (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: ./target/oltp1 --help
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\target\oltp1.exe --help
+
+      - name: Upload shaded JAR (Linux only)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaded-jar
+          path: target/oltp1.jar
+          if-no-files-found: error
+
       # Package both executables into one tar.gz per OS
       - name: Package tar.gz (Linux/macOS)
         if: runner.os != 'Windows'
@@ -74,6 +91,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+
   release:
     name: Create GitHub Release & upload assets
     needs: build
@@ -86,6 +104,17 @@ jobs:
           pattern: bundle-*
           merge-multiple: true
           path: release-assets
+
+      - name: Download shaded JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: shaded-jar
+          path: release-assets
+
+      - name: Checksum JAR
+        run: |
+          cd release-assets
+          shasum -a 256 "oltp1.jar" | awk '{print $1"  "$2}' > "oltp1.jar.sha256"
 
       - name: Show assets
         run: ls -la release-assets
@@ -104,5 +133,7 @@ jobs:
           files: |
             release-assets/*.tar.gz
             release-assets/*.tar.gz.sha256
+            release-assets/oltp1.jar
+            release-assets/*.jar.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
