@@ -8,11 +8,10 @@
 * [Features](#features)
 * [Primary Deviations from the Specification](#primary-deviations-from-the-specification)
 * [Getting Started](#getting-started)
-* [How to Run](#how-to-run)
 * [Benchmark Details](#benchmark-details)
 * [Contributing](#contributing)
 * [License](#license)
-* [Related resources](#related-resources)
+* [Related Resources](#related-resources)
 * [Troubleshooting](docker_troubleshooting.md)
 
 ---
@@ -32,8 +31,8 @@ While the older TPC-C benchmark is still more commonly used, TPC-E is the TPC's 
 ## Features
 
 * **Comprehensive Workload**: Implements all of the TPC-E transactions, including:
-    * **Read-only**: `Broker-Volume` , `Customer-Position` , `Market-Watch` , `Security-Detail` , `Trade-Lookup` , `Trade-Status`.
-    * **Read-write**: `Trade-Order` , `Trade-Result` , `Trade-Update` , `Data-Maintenance` , `Trade-Cleanup`.
+    * **Read-only**: `Broker-Volume`, `Customer-Position`, `Market-Watch`, `Security-Detail`, `Trade-Lookup`, `Trade-Status`.
+    * **Read-write**: `Trade-Order`, `Trade-Result`, `Trade-Update`, `Data-Maintenance`, `Trade-Cleanup`.
 * **Configurable**: Workload parameters such as the number of clients and test duration are fully configurable via command-line arguments.
 * **Multi-Database Support**: Designed for portability with specific optimizations for:
     * PostgreSQL 
@@ -113,7 +112,7 @@ oltp1 egen -c 5000 -t 5000 -w 1 -o ./flat_out
 
 # Initialize schema & load data (use env var for safety)
 export OLTP1_PASSWORD='<password>'
-oltp1 initdb -e pgsql -h localhost -U admin -d ./flat_out
+oltp1 initdb -e PGSQL -h localhost -U admin -d ./flat_out
 
 # run 10 minutes with 50 clients 
 oltp1 driver  --engine PGSQL --host localhost --clients 50 --duration 600
@@ -143,7 +142,7 @@ More options:
 | `-w <number>` | 300      | Initial workdays (8‑hour days) of trade history to load  |
 | `-o <path>`   | flat_out | Output path for the generated files                      |
 
-For a complete list and detailed explanations, see[egen.md](egen.md).
+For a complete list and detailed explanations, see [egen.md](egen.md).
 
 > Per TPC‑E, the minimum dataset has **5,000 customers** (Clause 2.6.1.2).
 
