@@ -25,14 +25,14 @@ While the older TPC-C benchmark is still more commonly used, TPC-E is the TPC's 
 **Primary motivations:**
 
 * **Enable Cross-Database Comparison**: A core goal is to provide a consistent and fair workload to "shootout" different database technologies. The same transactional logic is executed against PostgreSQL, SQL Server, and others, providing a level playing field for performance comparisons. *(And, in all honesty, ever since Microsoft SQL Server was released for Linux, I've been itching to compare it head-to-head with PostgreSQL!)*
-* **Modernize the Toolchain**: The official TPC-E tools are built in C++ with rigid assumptions about system architectures (e.g., running on Windows, tightly coupled to SQL Server), difficult to extend or modernize without forking and significant engineering work. This project is a chance to leverage something a bit more modern and easier to maintain, extend, and integrate into current development environments.
+* **Modernize the Toolchain**: The official TPC-E tools are built in C++ with rigid assumptions about system architectures (e.g., running on Windows, tightly coupled to SQL Server), difficult to extend or modernize without forking and significant engineering work. This project leverages a modern toolchain that is easier to maintain, extend, and integrate into current development environments.
 * **Promote Extensibility**: Core transaction logic is decoupled from the SQL queries, which makes it straightforward to add support for new databases. By simply implementing a new set of dialect-specific queries and registering them in the existing factory system, a new database can be integrated without altering the main benchmark code.
 
 ## Features
 
 * **Comprehensive Workload**: Implements all of the TPC-E transactions, including:
     * **Read-only**: `Broker-Volume`, `Customer-Position`, `Market-Watch`, `Security-Detail`, `Trade-Lookup`, `Trade-Status`.
-    * **Read-write**: `Trade-Order`, `Trade-Result`, `Trade-Update`, `Data-Maintenance`, `Trade-Cleanup`.
+    * **Read-write**: `Trade-Order`, `Trade-Result`, `Trade-Update`, `Market-Feed`, `Data-Maintenance`, `Trade-Cleanup`.
 * **Configurable**: Workload parameters such as the number of clients and test duration are fully configurable via command-line arguments.
 * **Multi-Database Support**: Designed for portability with specific optimizations for:
     * PostgreSQL 
