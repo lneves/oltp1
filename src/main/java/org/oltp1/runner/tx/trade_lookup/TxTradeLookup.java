@@ -20,8 +20,12 @@ import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class TxTradeLookup extends TxBase
 {
+	private final ObjectMapper json = new ObjectMapper();
 	private final SqlContext sqlCtx;
 	private final Sql2o sql2o;
 
@@ -77,7 +81,7 @@ public class TxTradeLookup extends TxBase
 		return txOutput;
 	}
 
-	private void executeFrame1(final Connection con, final TxTradeLookupInput txInput, final TxTradeLookupOutput txOutput) throws SQLException
+	private void executeFrame1(final Connection con, final TxTradeLookupInput txInput, final TxTradeLookupOutput txOutput) throws Exception
 	{
 		Query frm1Query = con.createQuery(sql.getTradeInfoFrame1());
 
@@ -92,12 +96,12 @@ public class TxTradeLookup extends TxBase
 		}
 		else if (sqlCtx.getSqlEngine() == SqlEngine.MSSQL)
 		{
-			frm1Query.addParameter("trade_ids", StringUtils.join(txInput.trade_id, ','));
+			String tradeIdsCsv = StringUtils.join(txInput.trade_id, ',');
+			frm1Query.addParameter("trade_ids", tradeIdsCsv);
 		}
 		else if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
 		{
-			String tradeIdsCsv = StringUtils.join(txInput.trade_id, ',');
-			String tradeIdsJson = String.format("[%s]", tradeIdsCsv);
+			String tradeIdsJson = json.writeValueAsString(txInput.trade_id);
 			frm1Query.addParameter("trade_ids", tradeIdsJson);
 		}
 

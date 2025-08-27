@@ -83,7 +83,7 @@ public class TxTradeUpdate extends TxBase
 		return txOutput;
 	}
 
-	private void executeFrame1(final Connection con, final TxTradeUpdateInput txInput, final TxTradeUpdateOutput txOutput)
+	private void executeFrame1(final Connection con, final TxTradeUpdateInput txInput, final TxTradeUpdateOutput txOutput) throws Exception
 	{
 		txOutput.frame_executed = 1;
 		int num_found = 0;
@@ -96,11 +96,9 @@ public class TxTradeUpdate extends TxBase
 
 		num_found = tradeIds.size();
 
-		String tradesCsv = getCsv(tradeIds);
-
 		if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
 		{
-			String tradesJsonArr = String.format("[%s]", tradesCsv);
+			String tradesJsonArr = json.writeValueAsString(tradeIds);
 
 			con
 					.createQuery(sql.updateTradesFrame1())
@@ -109,6 +107,8 @@ public class TxTradeUpdate extends TxBase
 		}
 		else
 		{
+			String tradesCsv = getCsv(tradeIds);
+
 			con
 					.createQuery(sql.updateTradesFrame1())
 					.addParameter("trade_lst", tradesCsv)

@@ -65,7 +65,7 @@ public class TxBrokerVolume extends TxBase
 		Query txQ = con
 				.createQuery(sql.getVolume());
 
-		if (sqlCtx.getSqlEngine() == SqlEngine.POSTGRESQL)
+		if (sqlCtx.getSqlEngine() == SqlEngine.POSTGRESQL || sqlCtx.getSqlEngine() == SqlEngine.ORIOLEDB)
 		{
 			Array brokerArr = con.getJdbcConnection().createArrayOf("varchar", txInput.broker_list);
 
