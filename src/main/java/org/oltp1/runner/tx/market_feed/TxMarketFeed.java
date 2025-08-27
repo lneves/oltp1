@@ -10,10 +10,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.db.SqlEngine;
-import org.oltp1.runner.tx.QueryFactory;
 import org.oltp1.runner.perf.TxBase;
 import org.oltp1.runner.perf.TxOutput;
 import org.oltp1.runner.perf.TxStatsCollector;
+import org.oltp1.runner.tx.QueryFactory;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
@@ -86,24 +86,25 @@ public class TxMarketFeed extends TxBase
 					.asList();
 
 			// collect the trade_id values from the requested list
-			String tradeIdsLst;
-			String tradeIdsCsv = tradeRequests
+			List<String> tradeIds = tradeRequests
 					.stream()
 					.map(r -> ((Number) r.get("tr_t_id")).toString())
 					.distinct()
-					.collect(Collectors.joining(","));
+					.collect(Collectors.toList());
 
-			if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
+			if (tradeIds.size() > 0)
 			{
-				tradeIdsLst = String.format("[%s]", tradeIdsCsv);
-			}
-			else
-			{
-				tradeIdsLst = tradeIdsCsv;
-			}
+				String tradeIdsLst;
 
-			if (StringUtils.isNotBlank(tradeIdsCsv))
-			{
+				if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
+				{
+					tradeIdsLst = json.writeValueAsString(tradeIds);
+				}
+				else
+				{
+					tradeIdsLst = StringUtils.join(tradeIds, ",");
+				}
+
 				// Update trade status to 'submitted'
 				con
 						.createQuery(sql.updateTrade())

@@ -9,10 +9,10 @@ import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.db.SqlEngine;
 import org.oltp1.runner.generator.TxInputGenerator;
-import org.oltp1.runner.tx.QueryFactory;
 import org.oltp1.runner.perf.TxBase;
 import org.oltp1.runner.perf.TxOutput;
 import org.oltp1.runner.perf.TxStatsCollector;
+import org.oltp1.runner.tx.QueryFactory;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
@@ -76,6 +76,7 @@ public class TxBrokerVolume extends TxBase
 		else if (sqlCtx.getSqlEngine() == SqlEngine.MSSQL)
 		{
 			String brokerLstCsv = StringUtils.join(txInput.broker_list, ",");
+
 			txQ
 					.addParameter("broker_list", brokerLstCsv)
 					.addParameter("sector_name", txInput.sector_name);
