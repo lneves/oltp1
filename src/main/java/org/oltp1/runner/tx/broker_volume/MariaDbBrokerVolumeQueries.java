@@ -11,22 +11,17 @@ public class MariaDbBrokerVolumeQueries implements BrokerVolumeQueries
 	{
 		return """
 				SELECT
-				    b_name AS broker_name,
-				    SUM(tr_qty * tr_bid_price) AS volume
+					b_name AS broker_name
+					, SUM(tr_qty * tr_bid_price) AS volume
 				FROM
-				    broker
-				    , trade_request
-				    , security
-				    , company
-				    , industry
-				    , sector
+					broker
+					JOIN trade_request ON tr_b_id = b_id
+					JOIN security ON tr_s_symb = s_symb
+					JOIN company ON s_co_id = co_id
+					JOIN industry ON co_in_id = in_id
+					JOIN sector ON sc_id = in_sc_id
 				WHERE
-				    tr_b_id = b_id
-				    AND tr_s_symb = s_symb
-				    AND s_co_id = co_id
-				    AND co_in_id = in_id
-				    AND sc_id = in_sc_id
-				    AND b_name IN (
+				    b_name IN (
 				        SELECT value
 				        FROM JSON_TABLE(
 				            :broker_list

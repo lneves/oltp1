@@ -15,18 +15,13 @@ public class PgSqlBrokerVolumeQueries implements BrokerVolumeQueries
 					, SUM(tr_qty * tr_bid_price) AS volume
 				FROM
 					broker
-					, trade_request
-					, security
-					, company
-					, industry
-					, sector
+					JOIN trade_request ON tr_b_id = b_id
+					JOIN security ON tr_s_symb = s_symb
+					JOIN company ON s_co_id = co_id
+					JOIN industry ON co_in_id = in_id
+					JOIN sector ON sc_id = in_sc_id
 				WHERE
-					tr_b_id = b_id
-					AND tr_s_symb = s_symb
-					AND s_co_id = co_id
-					AND co_in_id = in_id
-					AND sc_id = in_sc_id
-				 	AND b_name = ANY(:broker_list)
+					b_name = ANY(:broker_list)
 					AND sc_name = :sector_name
 				GROUP BY
 					b_name
