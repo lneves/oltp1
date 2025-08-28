@@ -57,7 +57,7 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 					JOIN zip_code AS zea ON zea.zc_code = ea.ad_zc_code
 				WHERE
 					s.s_symb = CAST(:symbol AS varchar(15));
-								               """;
+								""";
 	}
 
 	@Override
@@ -74,7 +74,7 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 				WHERE
 					cc.cp_co_id = :co_id
 				ORDER BY c.co_name OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY;
-								               """;
+								""";
 	}
 
 	@Override
@@ -102,7 +102,7 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 				ORDER BY
 					fi_year ASC, fi_qtr
 				OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY;
-				               """;
+				""";
 	}
 
 	@Override
@@ -123,7 +123,7 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 				ORDER BY
 					dm_date ASC
 				OFFSET 0 ROWS FETCH NEXT :max_rows_to_return ROWS ONLY;
-				               """;
+				""";
 	}
 
 	@Override
@@ -138,7 +138,7 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 					last_trade
 				WHERE
 					lt_s_symb = CAST(:symbol as varchar(15));
-				               """;
+				""";
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 				ORDER BY
 					ni_dts ASC
 				OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY;
-				               """;
+				""";
 	}
 
 	@Override
@@ -179,6 +179,6 @@ public class DefaultSecurityDetailQueries implements SecurityDetailQueries
 				ORDER BY
 					ni_dts ASC
 				OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY;
-				               """;
+				""";
 	}
 }

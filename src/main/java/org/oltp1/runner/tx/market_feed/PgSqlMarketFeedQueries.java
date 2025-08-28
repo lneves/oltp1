@@ -13,13 +13,13 @@ public class PgSqlMarketFeedQueries implements MarketFeedQueries
 				WITH tickers AS (
 
 				SELECT
-				    x.symbol
-				    , x.trade_qty
-				    , x.trade_price
+					x.symbol
+					, x.trade_qty
+					, x.trade_price
 				FROM
-				    jsonb_to_recordset(
-				        :tickers::jsonb
-				    ) AS x(symbol varchar(15), trade_price decimal(8,2), trade_qty bigint)
+					jsonb_to_recordset(
+						:tickers::jsonb
+					) AS x(symbol varchar(15), trade_price decimal(8,2), trade_qty bigint)
 				)
 				UPDATE
 					last_trade
@@ -41,13 +41,13 @@ public class PgSqlMarketFeedQueries implements MarketFeedQueries
 				WITH tickers AS (
 
 				SELECT
-				    x.symbol,
-				    x.trade_qty,
-				    x.trade_price
+					x.symbol,
+					x.trade_qty,
+					x.trade_price
 				FROM
-				    jsonb_to_recordset(
-				        :tickers::jsonb
-				    ) AS x(symbol TEXT, trade_price NUMERIC, trade_qty INT)
+					jsonb_to_recordset(
+						:tickers::jsonb
+					) AS x(symbol TEXT, trade_price NUMERIC, trade_qty INT)
 				)
 				SELECT
 					tr_t_id
@@ -62,7 +62,7 @@ public class PgSqlMarketFeedQueries implements MarketFeedQueries
 					  (tr_tt_id = :tt_buy AND tr_bid_price >= trade_price) OR
 					  (tr_tt_id = :tt_sell AND tr_bid_price <= trade_price) OR
 					  (tr_tt_id = :tt_stop AND tr_bid_price >= trade_price)
-								               """;
+											   """;
 	}
 
 	@Override
@@ -70,12 +70,12 @@ public class PgSqlMarketFeedQueries implements MarketFeedQueries
 	{
 		return """
 				UPDATE
-				    trade
+					trade
 				SET
-				    t_dts = CURRENT_TIMESTAMP,
-				    t_st_id = :status_submitted
+					t_dts = CURRENT_TIMESTAMP,
+					t_st_id = :status_submitted
 				WHERE
-				    t_id IN (SELECT trade_id::bigint FROM string_to_table(:trade_lst, ',') AS trade_id);
+					t_id IN (SELECT trade_id::bigint FROM string_to_table(:trade_lst, ',') AS trade_id);
 				""";
 	}
 

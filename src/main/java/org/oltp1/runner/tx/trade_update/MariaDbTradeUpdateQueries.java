@@ -17,8 +17,8 @@ public class MariaDbTradeUpdateQueries extends DefaultTradeUpdateQueries
 					t_exec_name = CASE
 									WHEN t_exec_name LIKE '% X %' THEN REPLACE (RTRIM(t_exec_name), ' X ', ' ')
 									WHEN t_exec_name LIKE '% %' THEN REPLACE (RTRIM(t_exec_name), ' ', ' X ')
-				                   	ELSE t_exec_name
-				                   END
+									ELSE t_exec_name
+								END
 				WHERE
 					t_id IN (
 						SELECT value FROM JSON_TABLE(:trade_lst, '$[*]' COLUMNS (value bigint PATH '$')) tid
@@ -39,7 +39,7 @@ public class MariaDbTradeUpdateQueries extends DefaultTradeUpdateQueries
 									WHEN SE_CASH_TYPE = 'Margin Account' THEN 'Margin'
 									WHEN SE_CASH_TYPE = 'Margin' THEN 'Margin Account'
 									ELSE se_cash_type
-				                   END
+								END
 				WHERE
 					se_t_id IN (
 						SELECT value FROM JSON_TABLE(:trade_lst, '$[*]' COLUMNS (value bigint PATH '$')) tid

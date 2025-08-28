@@ -40,14 +40,14 @@ public abstract class DefaultTradeUpdateQueries implements TradeUpdateQueries
 				  , s.s_name
 				FROM (
 				  SELECT
-				    t_id, t_ca_id, t_exec_name, t_is_cash,
-				    t_trade_price, t_qty, t_dts, t_tt_id, t_s_symb
+					t_id, t_ca_id, t_exec_name, t_is_cash,
+					t_trade_price, t_qty, t_dts, t_tt_id, t_s_symb
 				  FROM trade
 				  WHERE
-				    t_s_symb = CAST(:symbol as varchar(15))
-				    AND t_dts >= :start_trade_dts
-				    AND t_dts <= :end_trade_dts
-				    AND t_ca_id <= :max_acct_id
+					t_s_symb = CAST(:symbol as varchar(15))
+					AND t_dts >= :start_trade_dts
+					AND t_dts <= :end_trade_dts
+					AND t_ca_id <= :max_acct_id
 				  ORDER BY t_dts ASC, t_id ASC
 				  OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY
 				) AS t

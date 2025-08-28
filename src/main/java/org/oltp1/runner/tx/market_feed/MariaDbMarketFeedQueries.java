@@ -14,26 +14,26 @@ public class MariaDbMarketFeedQueries implements MarketFeedQueries
 				INNER JOIN 
 				(
 					WITH tickers AS (
-					    SELECT
-					        symbol
-					        , trade_qty
-					        , trade_price
-					    FROM JSON_TABLE(
-					        :tickers
-					        , '$[*]' COLUMNS (
-					            symbol VARCHAR(15) PATH '$.symbol'
-					            , trade_price DECIMAL(8,2) PATH '$.trade_price'
-					            , trade_qty BIGINT PATH '$.trade_qty'
-					        )
-					    ) AS x
+						SELECT
+							symbol
+							, trade_qty
+							, trade_price
+						FROM JSON_TABLE(
+							:tickers
+							, '$[*]' COLUMNS (
+								symbol VARCHAR(15) PATH '$.symbol'
+								, trade_price DECIMAL(8,2) PATH '$.trade_price'
+								, trade_qty BIGINT PATH '$.trade_qty'
+							)
+						) AS x
 					)
 				  SELECT * FROM tickers
 				
 				) tickers ON lt.lt_s_symb = tickers.symbol
 				SET
-				    lt.lt_price = tickers.trade_price,
-				    lt.lt_vol = lt.lt_vol + tickers.trade_qty,
-				    lt.lt_dts = CURRENT_TIMESTAMP;
+					lt.lt_price = tickers.trade_price,
+					lt.lt_vol = lt.lt_vol + tickers.trade_qty,
+					lt.lt_dts = CURRENT_TIMESTAMP;
 												""";
 	}
 
@@ -42,33 +42,33 @@ public class MariaDbMarketFeedQueries implements MarketFeedQueries
 	{
 		return """
 				WITH tickers AS (
-				    SELECT
-				        symbol
-				        , trade_qty
-				        , trade_price
-				    FROM JSON_TABLE(
-				        :tickers
-				        , '$[*]' COLUMNS (
-				            symbol VARCHAR(255) PATH '$.symbol'
-				            , trade_price DECIMAL(20,6) PATH '$.trade_price'
-				            , trade_qty INT PATH '$.trade_qty'
-				        )
-				    ) AS x
+					SELECT
+						symbol
+						, trade_qty
+						, trade_price
+					FROM JSON_TABLE(
+						:tickers
+						, '$[*]' COLUMNS (
+							symbol VARCHAR(255) PATH '$.symbol'
+							, trade_price DECIMAL(20,6) PATH '$.trade_price'
+							, trade_qty INT PATH '$.trade_qty'
+						)
+					) AS x
 				)
 				SELECT
-				    tr_t_id,
-				    tr_bid_price,
-				    tr_tt_id,
-				    tr_qty,
-				    tr_s_symb
+					tr_t_id,
+					tr_bid_price,
+					tr_tt_id,
+					tr_qty,
+					tr_s_symb
 				FROM
-				    trade_request
-				    INNER JOIN tickers ON tr_s_symb = symbol
+					trade_request
+					INNER JOIN tickers ON tr_s_symb = symbol
 				WHERE
-				    (tr_tt_id = :tt_buy AND tr_bid_price >= trade_price) OR
-				    (tr_tt_id = :tt_sell AND tr_bid_price <= trade_price) OR
-				    (tr_tt_id = :tt_stop AND tr_bid_price >= trade_price);
-												               """;
+					(tr_tt_id = :tt_buy AND tr_bid_price >= trade_price) OR
+					(tr_tt_id = :tt_sell AND tr_bid_price <= trade_price) OR
+					(tr_tt_id = :tt_stop AND tr_bid_price >= trade_price);
+															   """;
 	}
 
 	@Override
@@ -76,12 +76,12 @@ public class MariaDbMarketFeedQueries implements MarketFeedQueries
 	{
 		return """
 				UPDATE
-				    trade
+					trade
 				SET
-				    t_dts = CURRENT_TIMESTAMP,
-				    t_st_id = :status_submitted
+					t_dts = CURRENT_TIMESTAMP,
+					t_st_id = :status_submitted
 				WHERE
-				    t_id IN (SELECT value FROM JSON_TABLE(:trade_lst, '$[*]' COLUMNS (value bigint PATH '$')) tid);	    
+					t_id IN (SELECT value FROM JSON_TABLE(:trade_lst, '$[*]' COLUMNS (value bigint PATH '$')) tid);		
 				""";
 	}
 

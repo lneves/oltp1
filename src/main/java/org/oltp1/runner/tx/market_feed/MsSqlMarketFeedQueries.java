@@ -14,15 +14,15 @@ public class MsSqlMarketFeedQueries implements MarketFeedQueries
 				WITH tickers AS (
 
 				SELECT
-				    symbol,
-				    trade_price,
-				    trade_qty
+					symbol,
+					trade_price,
+					trade_qty
 				FROM
-				    OPENJSON(:tickers)
+					OPENJSON(:tickers)
 				WITH (
-				    symbol NVARCHAR(50),
-				    trade_price DECIMAL(10,2),
-				    trade_qty INT
+					symbol NVARCHAR(50),
+					trade_price DECIMAL(10,2),
+					trade_qty INT
 					)
 				)
 				UPDATE
@@ -35,7 +35,7 @@ public class MsSqlMarketFeedQueries implements MarketFeedQueries
 					tickers
 				WHERE
 					last_trade.lt_s_symb = tickers.symbol;
-				               """;
+							   """;
 	}
 
 	@Override
@@ -45,15 +45,15 @@ public class MsSqlMarketFeedQueries implements MarketFeedQueries
 				WITH tickers AS (
 
 				SELECT
-				    symbol
-				    , trade_price
-				    , trade_qty
+					symbol
+					, trade_price
+					, trade_qty
 				FROM
-				    OPENJSON(:tickers)
+					OPENJSON(:tickers)
 				WITH (
-				    symbol NVARCHAR(50),
-				    trade_price DECIMAL(10,2),
-				    trade_qty INT
+					symbol NVARCHAR(50),
+					trade_price DECIMAL(10,2),
+					trade_qty INT
 					)
 				)
 				SELECT
@@ -69,7 +69,7 @@ public class MsSqlMarketFeedQueries implements MarketFeedQueries
 					  (tr_tt_id = :tt_buy AND tr_bid_price >= trade_price) OR
 					  (tr_tt_id = :tt_sell AND tr_bid_price <= trade_price) OR
 					  (tr_tt_id = :tt_stop AND tr_bid_price >= trade_price)
-				               """;
+							   """;
 	}
 
 	@Override
@@ -77,12 +77,12 @@ public class MsSqlMarketFeedQueries implements MarketFeedQueries
 	{
 		return """
 				UPDATE
-				    trade
+					trade
 				SET
-				    t_dts = CURRENT_TIMESTAMP,
-				    t_st_id = :status_submitted
+					t_dts = CURRENT_TIMESTAMP,
+					t_st_id = :status_submitted
 				WHERE
-				    t_id IN (SELECT CAST(value AS bigint) AS trade_id FROM STRING_SPLIT(:trade_lst,','));
+					t_id IN (SELECT CAST(value AS bigint) AS trade_id FROM STRING_SPLIT(:trade_lst,','));
 				""";
 	}
 

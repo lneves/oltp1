@@ -21,7 +21,7 @@ public class DefaultTradeStatusQueries implements TradeStatusQueries
 				FROM
 				(
 				  SELECT
-				    t_id, t_dts, t_st_id, t_tt_id, t_s_symb, t_qty, t_exec_name, t_chrg
+					t_id, t_dts, t_st_id, t_tt_id, t_s_symb, t_qty, t_exec_name, t_chrg
 				  FROM trade
 				  WHERE t_ca_id = :acct_id
 				  ORDER BY t_dts DESC, t_id DESC

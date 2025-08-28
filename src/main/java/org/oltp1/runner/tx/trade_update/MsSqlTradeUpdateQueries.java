@@ -17,8 +17,8 @@ public class MsSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 					t_exec_name = CASE
 									WHEN t_exec_name LIKE '% X %' THEN REPLACE (RTRIM(t_exec_name), ' X ', ' ')
 									WHEN t_exec_name LIKE '% %' THEN REPLACE (RTRIM(t_exec_name), ' ', ' X ')
-				                   	ELSE t_exec_name
-				                   END
+									ELSE t_exec_name
+								   END
 				WHERE
 					t_id IN (
 						SELECT CAST(value AS bigint) FROM STRING_SPLIT(:trade_lst,',')
@@ -39,7 +39,7 @@ public class MsSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 									WHEN SE_CASH_TYPE = 'Margin Account' THEN 'Margin'
 									WHEN SE_CASH_TYPE = 'Margin' THEN 'Margin Account'
 									ELSE se_cash_type
-				                   END
+								END
 				WHERE
 					se_t_id IN (
 						SELECT CAST(value AS bigint) FROM STRING_SPLIT(:trade_lst,',')
@@ -56,10 +56,10 @@ public class MsSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 				SELECT
 					trade_id
 					, t_qty
-				    , tt_name
-				    , s_name
+					, tt_name
+					, s_name
 				FROM
-				    OPENJSON(:cash_trades)
+					OPENJSON(:cash_trades)
 				WITH (trade_id BIGINT, t_qty INT, tt_name VARCHAR(12), s_name VARCHAR(70))
 
 				)
@@ -67,10 +67,10 @@ public class MsSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 					cash_transaction
 				SET
 					ct_name = CASE
-						WHEN ct_name LIKE '% Shares of %' THEN rs.tt_name + ' ' + CAST(rs.t_qty AS VARCHAR(10)) + ' shares of ' + rs.s_name
-						WHEN ct_name LIKE '% shares of %' THEN rs.tt_name + ' ' + CAST(rs.t_qty AS VARCHAR(10)) + ' Shares of ' + rs.s_name
-						ELSE ct_name
-						END
+								WHEN ct_name LIKE '% Shares of %' THEN rs.tt_name + ' ' + CAST(rs.t_qty AS VARCHAR(10)) + ' shares of ' + rs.s_name
+								WHEN ct_name LIKE '% shares of %' THEN rs.tt_name + ' ' + CAST(rs.t_qty AS VARCHAR(10)) + ' Shares of ' + rs.s_name
+								ELSE ct_name
+							END
 				FROM
 					rs
 				WHERE

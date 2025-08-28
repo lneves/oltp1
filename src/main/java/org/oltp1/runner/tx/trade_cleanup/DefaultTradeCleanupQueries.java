@@ -51,6 +51,6 @@ public abstract class DefaultTradeCleanupQueries implements TradeCleanupQueries
 					, t_dts = CURRENT_TIMESTAMP
 				FROM tr_req
 				WHERE t_id = tr_req.trade_id;
-				               """;
+				""";
 	}
 }

@@ -35,7 +35,7 @@ public class PgSqlTradeLookupQueries extends DefaultTradeLookupQueries
 				ORDER BY
 					t_id
 				OFFSET 0 ROWS FETCH NEXT (:max_trades) ROWS ONLY;
-				               """;
+				""";
 	}
 
 	@Override
@@ -118,6 +118,6 @@ public class PgSqlTradeLookupQueries extends DefaultTradeLookupQueries
 					) AS t
 				WHERE
 					pos <= 3
-				               """;
+				""";
 	}
 }

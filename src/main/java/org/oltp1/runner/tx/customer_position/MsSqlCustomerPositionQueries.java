@@ -53,9 +53,7 @@ public class MsSqlCustomerPositionQueries extends DefaultCustomerPositionQueries
 					) AS t
 					JOIN trade ON t_id=id
 					INNER LOOP JOIN trade_history ON th_t_id=t_id
-					, status_type
-				WHERE
-					st_id = th_st_id
+					JOIN status_type ON st_id = th_st_id
 				ORDER BY
 					th_dts DESC
 				OPTION (FORCE ORDER);

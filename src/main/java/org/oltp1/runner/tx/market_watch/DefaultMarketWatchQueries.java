@@ -38,7 +38,7 @@ public class DefaultMarketWatchQueries implements MarketWatchQueries
 				FROM
 					market_caps
 				WHERE old_mkt_cap <> 0;
-								               """;
+								""";
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public class DefaultMarketWatchQueries implements MarketWatchQueries
 				SELECT 100 * COALESCE((SUM(new_mkt_cap) / SUM(old_mkt_cap)) - 1, 0.0) AS pct_change
 				FROM market_caps
 				WHERE old_mkt_cap <> 0;
-								               """;
+								""";
 	}
 
 	@Override
@@ -110,6 +110,6 @@ public class DefaultMarketWatchQueries implements MarketWatchQueries
 				SELECT 100 * COALESCE((SUM(new_mkt_cap) / SUM(old_mkt_cap)) - 1, 0.0) AS pct_change
 				FROM market_caps
 				WHERE old_mkt_cap <> 0;
-								               """;
+								""";
 	}
 }
