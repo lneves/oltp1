@@ -50,4 +50,5 @@ public class PgSqlCustomerPositionQueries extends DefaultCustomerPositionQueries
 					JOIN status_type ON st_id = th_st_id
 				ORDER BY th_dts DESC LIMIT 30;
 								""";
+	}
 }
