@@ -242,18 +242,15 @@ public class DefaultTradeResultQueries implements TradeResultQueries
 					, cr_rate AS comm_rate
 				FROM
 					commission_rate
-					, customer
-					, security
+					JOIN customer ON cr_c_tier = c_tier
+					JOIN security ON cr_ex_id = s_ex_id
 				WHERE
 					c_id = :cust_id
 					AND s_symb = CAST(:symbol as varchar(15))
 					AND cr_from_qty <= :trade_qty
 					AND cr_tt_id = :type_id
-					AND cr_ex_id = s_ex_id
-					AND cr_c_tier = c_tier
 				ORDER BY
-					cr_from_qty DESC
-				OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
+					cr_from_qty DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
 				""";
 	}
 

@@ -6,7 +6,6 @@ package org.oltp1.runner.tx.trade_update;
  */
 public class MsSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 {
-
 	@Override
 	public String updateTradesFrame1()
 	{

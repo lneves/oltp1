@@ -45,12 +45,10 @@ public class DefaultTradeStatusQueries implements TradeStatusQueries
 					, b_name AS broker_name
 				FROM
 					customer_account
-					, customer
-					, broker
+					JOIN customer ON c_id = ca_c_id
+					JOIN broker ON b_id = ca_b_id
 				WHERE
 					ca_id = :acct_id
-					AND c_id = ca_c_id
-					AND b_id = ca_b_id
 								""";
 	}
 }
