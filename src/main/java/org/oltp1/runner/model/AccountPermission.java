@@ -1,7 +1,10 @@
 package org.oltp1.runner.model;
 
-public class AccountPermission
+import java.io.Serializable;
+
+public class AccountPermission implements Serializable
 {
+	private static final long serialVersionUID = -2585702300192409284L;
 	public String taxId;
 	public String fName;
 	public String lName;

@@ -105,7 +105,7 @@ java \
 
 ]]>
 								</echo>
-								<chmod file="${project.build.directory}/oltp1.sh" perm="ugo+x"/>
+								<chmod file="${project.build.directory}/oltp1.sh" perm="ugo+x" />
 								<echo file="${project.build.directory}/oltp1.bat" append="false">
 									<![CDATA[
 @echo off
@@ -230,6 +230,12 @@ java ^
 			<groupId>com.tdunning</groupId>
 			<artifactId>t-digest</artifactId>
 			<version>3.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2-mvstore</artifactId>
+			<version>2.3.232</version>
 		</dependency>
 
 		<dependency>

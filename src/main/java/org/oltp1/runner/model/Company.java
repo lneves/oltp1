@@ -1,7 +1,10 @@
 package org.oltp1.runner.model;
 
-public class Company
+import java.io.Serializable;
+
+public class Company implements Serializable
 {
+	private static final long serialVersionUID = -4090216740689456057L;
 	public String symbol;
 	public String issue;
 	public long coId;

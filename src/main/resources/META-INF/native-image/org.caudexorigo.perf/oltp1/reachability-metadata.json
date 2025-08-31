@@ -1,16 +1,7 @@
 {
   "reflection": [
     {
-      "type": "[F"
-    },
-    {
       "type": "[Lcom.zaxxer.hikari.util.ConcurrentBag$IConcurrentBagEntry;"
-    },
-    {
-      "type": "[Ljava.lang.Float;"
-    },
-    {
-      "type": "[Ljava.lang.String;"
     },
     {
       "type": "[Ljava.sql.Statement;"
@@ -112,6 +103,60 @@
       "type": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
     },
     {
+      "type": "com.sun.crypto.provider.HmacCore$HmacSHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA224",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA512",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
       "methods": [
         {
@@ -151,6 +196,26 @@
       "allDeclaredFields": true
     },
     {
+      "type": "java.lang.SecurityManager",
+      "methods": [
+        {
+          "name": "checkPermission",
+          "parameterTypes": [
+            "java.security.Permission"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.lang.System",
+      "methods": [
+        {
+          "name": "getSecurityManager",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "java.net.Socket"
     },
     {
@@ -160,6 +225,17 @@
       "type": "java.nio.file.Paths"
     },
     {
+      "type": "java.security.AccessController",
+      "methods": [
+        {
+          "name": "doPrivileged",
+          "parameterTypes": [
+            "java.security.PrivilegedExceptionAction"
+          ]
+        }
+      ]
+    },
+    {
       "type": "java.sql.Connection"
     },
     {
@@ -167,14 +243,6 @@
     },
     {
       "type": "java.sql.DriverManager"
-    },
-    {
-      "type": "java.sql.SQLException",
-      "fields": [
-        {
-          "name": "next"
-        }
-      ]
     },
     {
       "type": "java.sql.Time"
@@ -236,7 +304,190 @@
       ]
     },
     {
+      "type": "org.h2.mvstore.MVStore$TxCounter",
+      "fields": [
+        {
+          "name": "counter"
+        }
+      ]
+    },
+    {
+      "type": "org.h2.mvstore.Page",
+      "fields": [
+        {
+          "name": "pos"
+        }
+      ]
+    },
+    {
       "type": "org.joda.time.DateTime"
+    },
+    {
+      "type": "org.mariadb.jdbc.Driver"
+    },
+    {
+      "type": "org.oltp1.Main",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.oltp1.egen.EGenLoader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.oltp1.initdb.DbInitRunner",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.oltp1.runner.Oltp1Driver",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.oltp1.runner.model.Ticker",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getSymbol",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTradePrice",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTradeQty",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.postgresql.Driver",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.postgresql.core.QueryExecutorCloseAction",
+      "fields": [
+        {
+          "name": "pgStream"
+        }
+      ]
+    },
+    {
+      "type": "org.postgresql.jdbc.PgStatement",
+      "fields": [
+        {
+          "name": "cancelTimerTask"
+        },
+        {
+          "name": "isClosed"
+        },
+        {
+          "name": "statementState"
+        }
+      ]
+    },
+    {
+      "type": "org.slf4j.Logger"
+    },
+    {
+      "type": "org.sql2o.extensions.postgres.converters.JSONConverter"
+    },
+    {
+      "type": "org.sql2o.quirks.PostgresQuirksProvider"
+    },
+    {
+      "type": "picocli.CommandLine$AutoHelpMixin",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "sun.security.provider.NativePRNG",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.security.SecureRandomParameters"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA2$SHA224",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA2$SHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA5$SHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA5$SHA512",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": {
+        "proxy": [
+          "java.sql.Connection"
+        ]
+      }
+    },
+    {
+      "type": "[F"
+    },
+    {
+      "type": "[Ljava.lang.Float;"
+    },
+    {
+      "type": "[Ljava.lang.String;"
+    },
+    {
+      "type": "java.sql.SQLException",
+      "fields": [
+        {
+          "name": "next"
+        }
+      ]
     },
     {
       "type": "org.mariadb.jdbc.Configuration",
@@ -378,245 +629,10 @@
       "type": "org.mariadb.jdbc.plugin.codec.ZonedDateTimeCodec"
     },
     {
-      "type": "org.oltp1.Main",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.oltp1.egen.EGenLoader",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.oltp1.initdb.DbInitRunner",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.oltp1.runner.Oltp1Driver",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.oltp1.runner.model.Ticker",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getSymbol",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTradePrice",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTradeQty",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "org.postgresql.Driver"
     },
     {
-      "type": "org.slf4j.Logger"
-    },
-    {
       "type": "org.slf4j.LoggerFactory"
-    },
-    {
-      "type": "org.sql2o.extensions.postgres.converters.JSONConverter"
-    },
-    {
-      "type": "org.sql2o.quirks.PostgresQuirksProvider"
-    },
-    {
-      "type": "picocli.CommandLine$AutoHelpMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "sun.security.provider.NativePRNG",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.security.SecureRandomParameters"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.security.provider.SHA",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": {
-        "proxy": [
-          "java.sql.Connection"
-        ]
-      }
-    },
-    {
-      "type": "com.sun.crypto.provider.HmacCore$HmacSHA256",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA224",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA256",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA384",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA512",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "java.lang.SecurityManager",
-      "methods": [
-        {
-          "name": "checkPermission",
-          "parameterTypes": [
-            "java.security.Permission"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "java.lang.System",
-      "methods": [
-        {
-          "name": "getSecurityManager",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "java.security.AccessController",
-      "methods": [
-        {
-          "name": "doPrivileged",
-          "parameterTypes": [
-            "java.security.PrivilegedExceptionAction"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.mariadb.jdbc.Driver"
-    },
-    {
-      "type": "org.postgresql.Driver",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.postgresql.core.QueryExecutorCloseAction",
-      "fields": [
-        {
-          "name": "pgStream"
-        }
-      ]
-    },
-    {
-      "type": "org.postgresql.jdbc.PgStatement",
-      "fields": [
-        {
-          "name": "cancelTimerTask"
-        },
-        {
-          "name": "isClosed"
-        },
-        {
-          "name": "statementState"
-        }
-      ]
-    },
-    {
-      "type": "sun.security.provider.SHA2$SHA224",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "sun.security.provider.SHA2$SHA256",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "sun.security.provider.SHA5$SHA384",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "sun.security.provider.SHA5$SHA512",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
     },
     {
       "type": "apple.security.AppleProvider",
@@ -867,6 +883,9 @@
       "glob": "META-INF/services/java.lang.System$LoggerFinder"
     },
     {
+      "glob": "META-INF/services/java.net.spi.URLStreamHandlerProvider"
+    },
+    {
       "glob": "META-INF/services/java.sql.Driver"
     },
     {
@@ -877,9 +896,6 @@
     },
     {
       "glob": "META-INF/services/javax.xml.parsers.SAXParserFactory"
-    },
-    {
-      "glob": "META-INF/services/org.mariadb.jdbc.plugin.Codec"
     },
     {
       "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
@@ -909,16 +925,6 @@
       "glob": "logback.xml"
     },
     {
-      "glob": "mariadb.properties"
-    },
-    {
-      "module": "java.xml",
-      "glob": "jdk/xml/internal/jdkcatalog/JDKCatalog.xml"
-    },
-    {
-      "glob": "META-INF/services/java.net.spi.URLStreamHandlerProvider"
-    },
-    {
       "glob": "org/postgresql/driverconfig.properties"
     },
     {
@@ -928,6 +934,16 @@
     {
       "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
+    },
+    {
+      "module": "java.xml",
+      "glob": "jdk/xml/internal/jdkcatalog/JDKCatalog.xml"
+    },
+    {
+      "glob": "META-INF/services/org.mariadb.jdbc.plugin.Codec"
+    },
+    {
+      "glob": "mariadb.properties"
     },
     {
       "glob": "META-INF/services/java.net.spi.InetAddressResolverProvider"
@@ -1059,6 +1075,20 @@
       "locales": [
         "en-PT"
       ]
+    }
+  ],
+  "serialization": [
+    {
+      "type": "java.lang.String"
+    },
+    {
+      "type": "java.util.ArrayList"
+    },
+    {
+      "type": "org.oltp1.runner.model.AccountPermission"
+    },
+    {
+      "type": "org.oltp1.runner.model.Company"
     }
   ],
   "jni": [

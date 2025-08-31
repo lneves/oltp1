@@ -1,10 +1,10 @@
 package org.oltp1.runner.generator;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.h2.mvstore.MVMap;
+import org.h2.mvstore.MVStore;
+import org.h2.mvstore.OffHeapStore;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.model.Company;
 import org.slf4j.Logger;
@@ -20,16 +20,22 @@ public class CompanySelector
 	private final long minCoId;
 	private final long maxCoId;
 
-	private final List<Company> companyList;
-	private final Map<String, Company> companyMap;
+	private final MVMap<Integer, Company> companyList;
+	private final MVMap<String, Company> companyMap;
+
 	private final int storeLen;
 
 	public CompanySelector(SqlContext sqlCtx)
 	{
 		try (Connection con = sqlCtx.getSql2o().open();)
 		{
-			companyList = new ArrayList<>();
-			companyMap = new HashMap<>();
+			OffHeapStore offHeap = new OffHeapStore();
+			MVStore store = new MVStore.Builder().fileStore(offHeap).open();
+
+			AtomicInteger ix = new AtomicInteger(0);
+
+			companyList = store.openMap("companyList");
+			companyMap = store.openMap("companyList");
 
 			con
 					.createQuery("""
@@ -48,13 +54,16 @@ public class CompanySelector
 								r.getLong("co_id"),
 								r.getString("co_name"));
 
-						companyList.add(c);
+						companyList.put(ix.getAndIncrement(), c);
+						companyMap.put(r.getString("s_symb"), c);
 					});
 
-			storeLen = companyList.size();
+			store.commit();
+			store.compactFile(60000); // max compact time: 1 minute
 
-			log.info("Loaded {} companies from database", storeLen);
+			storeLen = ix.get();
 
+			log.info("Loaded {} securities from database", storeLen);
 		}
 
 		try (Connection con = sqlCtx.getSql2o().open())
