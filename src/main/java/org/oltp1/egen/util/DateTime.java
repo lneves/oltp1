@@ -23,8 +23,6 @@ public class DateTime
 	private static final int DY400 = 4 * DY100 + 1;
 	private static final int[] CUMULATIVE_MONTH_DAYS = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
-	private static final String[] MONTHS_SHORT = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
-	private static final String[] MONTHS_FULL = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 	private static final String[] AM_PM = { "AM", "PM" };
 	// Maps 24-hour to 12-hour format
 	private static final int[] HOUR_12 = { 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
@@ -37,17 +35,17 @@ public class DateTime
 	public static final int daysPerWeek = 7;
 	private static final double nsPerSecondDivisor = 1000000000.0;
 	private static final int nsPerSecond = 1000000000;
-	private static final double msPerSecondDivisor = 1000.000;
 	private static final int msPerSecond = 1000;
 	private static final int secondsPerMinute = 60;
 	private static final int minutesPerHour = 60;
 	private static final int hoursPerDay = 24;
-	private static final int hoursPerWorkDay = 8;
-	private static final int secondsPerHour = secondsPerMinute * minutesPerHour;
 	private static final int secondsPerDay = secondsPerMinute * minutesPerHour * hoursPerDay;
-	private static final int secondsPerWorkDay = secondsPerMinute * minutesPerHour * hoursPerWorkDay;
 	private static final int msPerDay = secondsPerDay * msPerSecond;
-	private static final int msPerWorkDay = secondsPerWorkDay * msPerSecond;
+	// private static final double msPerSecondDivisor = 1000.000;
+	// private static final int hoursPerWorkDay = 8;
+	// private static final int secondsPerWorkDay = secondsPerMinute * minutesPerHour * hoursPerWorkDay;
+	// private static final int secondsPerHour = secondsPerMinute * minutesPerHour;
+	// private static final int msPerWorkDay = secondsPerWorkDay * msPerSecond;
 
 	public int __diffInMilliSeconds(DateTime baseTime)
 	{

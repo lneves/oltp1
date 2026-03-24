@@ -15,7 +15,6 @@ public class CustomerTaxRateTable
 	private static final long RNG_SEED_BASE_TAX_RATE_ROW = 92740731L;
 	private static final long RNG_SEED_TABLE_DEFAULT = 37039940L;
 	private static final int TAX_RATES_PER_CUST = 2; // number of tax rates per customer
-	private static final int MAX_DIV_OR_CTRY_NAME = 6;
 	private static final long DEFAULT_LOAD_UNIT_SIZE = 1000;
 
 	// Number of RNG calls to skip for one row in order

@@ -195,12 +195,12 @@ public class QueryFactory
 
 	private static class RegistrationBuilder<T>
 	{
-		private final Class<T> queryInterface;
+		//private final Class<T> queryInterface;
 		private final Map<SqlEngine, Supplier<?>> engineMap;
 
 		public RegistrationBuilder(Class<T> queryInterface)
 		{
-			this.queryInterface = queryInterface;
+			//this.queryInterface = queryInterface;
 			this.engineMap = new HashMap<>();
 			queryRegistry.put(queryInterface, engineMap);
 		}

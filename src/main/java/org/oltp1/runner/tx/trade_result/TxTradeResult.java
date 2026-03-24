@@ -117,7 +117,7 @@ public class TxTradeResult extends TxBase
 		return txOutput;
 	}
 
-	private void executeFrame1(Connection con, TxOutput txOutput, TradeResultSession session)
+	private void executeFrame1(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
 		List<Map<String, Object>> tradeInfo = con
 				.createQuery(sql.getTradeInfo())
@@ -136,7 +136,7 @@ public class TxTradeResult extends TxBase
 		}
 	}
 
-	private void executeFrame2(Connection con, TxOutput txOutput, TradeResultSession session)
+	private void executeFrame2(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
 		Map<String, Object> customerAccount = con
 				.createQuery(sql.getCustomerAccount())
@@ -159,7 +159,7 @@ public class TxTradeResult extends TxBase
 		}
 	}
 
-	private void executeFrame3(Connection con, TxOutput txOutput, TradeResultSession session)
+	private void executeFrame3(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
 		double taxRate = con
 				.createQuery(sql.getTaxRate())
@@ -178,7 +178,7 @@ public class TxTradeResult extends TxBase
 		session.put("tax_amount", taxAmount);
 	}
 
-	private void executeFrame4(Connection con, TxOutput txOutput, TradeResultSession session)
+	private void executeFrame4(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
 		Map<String, Object> cmr = con
 				.createQuery(sql.getCommissionRate())
@@ -195,7 +195,7 @@ public class TxTradeResult extends TxBase
 		session.putAll(cmr);
 	}
 
-	private void executeFrame5(Connection con, TxOutput txOutput, TradeResultSession session)
+	private void executeFrame5(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
 		double commAmount = (session.getAsDouble("comm_rate") / 100) * (session.getAsInt("trade_qty") * session.getAsDouble("requested_price"));
 
@@ -224,7 +224,7 @@ public class TxTradeResult extends TxBase
 		session.put("comm_amount", commAmount);
 	}
 
-	private void executeFrame6(Connection con, TxOutput txOutput, TradeResultSession session)
+	private void executeFrame6(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
 		LocalDateTime dueDate = ((LocalDateTime) session.get("trade_dts")).plus(2, ChronoUnit.DAYS);
 
@@ -290,7 +290,7 @@ public class TxTradeResult extends TxBase
 		session.put("acct_bal", balance);
 	}
 
-	private void processSellTrade(Connection con, TradeResultSession session)
+	private void processSellTrade(final Connection con, final TradeResultSession session)
 	{
 		double buyValue = 0;
 		double sellValue = 0;

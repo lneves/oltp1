@@ -60,7 +60,7 @@ public class TxBrokerVolume extends TxBase
 		return txOutput;
 	}
 
-	private void executeFrame1(Connection con, final TxBrokerVolumeInput txInput, TxBrokerVolumeOutput txOutput) throws Exception
+	private void executeFrame1(final Connection con, final TxBrokerVolumeInput txInput, final TxBrokerVolumeOutput txOutput) throws Exception
 	{
 		Query txQ = con
 				.createQuery(sql.getVolume());

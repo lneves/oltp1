@@ -14,7 +14,6 @@ public class LastTradeTable implements TableGenerator<LastTradeRow>
 	private static final int initialTradePopulationBaseSecond = 0;
 	private static final int initialTradePopulationBaseFraction = 0;
 
-	private final DataFileManager dfm;
 	private final SecurityFile securityFile;
 	private final MEESecurity meeSecurity; // For calculating prices
 
@@ -26,7 +25,6 @@ public class LastTradeTable implements TableGenerator<LastTradeRow>
 
 	public LastTradeTable(DataFileManager dfm, long customerCount, long startFromCustomer, int daysOfInitialTrades)
 	{
-		this.dfm = dfm;
 		this.securityFile = dfm.getSecurityFile();
 
 		int hoursOfInitialTrades = daysOfInitialTrades * 8;

@@ -11,7 +11,6 @@ import org.oltp1.egen.model.CompanyCompetitorRow;
  */
 public class CompanyCompetitorTable implements TableGenerator<CompanyCompetitorRow>
 {
-	private final DataFileManager dfm;
 	private final CompanyCompetitorFile companyCompetitorFile;
 
 	private final long competitorCount;
@@ -21,7 +20,6 @@ public class CompanyCompetitorTable implements TableGenerator<CompanyCompetitorR
 
 	public CompanyCompetitorTable(DataFileManager dfm, long customerCount, long startFromCustomer)
 	{
-		this.dfm = dfm;
 		// The CompanyCompetitorFile abstraction is needed to handle scaling logic.
 		this.companyCompetitorFile = new CompanyCompetitorFile(dfm);
 

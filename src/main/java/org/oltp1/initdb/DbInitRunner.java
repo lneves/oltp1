@@ -1,9 +1,6 @@
 package org.oltp1.initdb;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
 import org.oltp1.common.CaseInsensitiveEnumConverter;

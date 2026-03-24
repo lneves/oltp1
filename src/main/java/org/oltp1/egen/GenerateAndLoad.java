@@ -50,7 +50,6 @@ public class GenerateAndLoad
 	private final long totalCustomers;
 	private final int loadUnitSize;
 	private final int scaleFactor;
-	private final int hoursOfInitialTrades;
 	private final String outDir;
 
 	// Constants from C++ version for progress updates
@@ -69,7 +68,6 @@ public class GenerateAndLoad
 		this.loadUnitSize = loadUnitSize;
 		this.scaleFactor = scaleFactor;
 		this.daysOfInitialTrades = daysOfInitialTrades;
-		this.hoursOfInitialTrades = daysOfInitialTrades * 8; // Convert days to hours
 		this.outDir = outDir;
 
 		// Ensure the output directory exists

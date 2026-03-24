@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:18
     container_name: ${PG_CONTAINER_NAME:-pg_oltp1}
     restart: unless-stopped
     environment:
@@ -18,11 +18,17 @@ services:
         read_only: true
       - type: bind
         source: ${PGDATA_HOST_PATH:-./pgdata}
-        target: /var/lib/postgresql/data
+        target: /var/lib/postgresql
       - type: bind
         source: ${TABLESPACE_HOST_PATH:-./pg_tablespaces}
         target: /mnt/tablespaces
       - ./init:/docker-entrypoint-initdb.d
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        export PATH="/usr/local/bin:/usr/lib/postgresql/${PG_MAJOR:-18}/bin:$PATH";
+        chown -R 999:999 /mnt/tablespaces;
+        exec /usr/local/bin/docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
     ports:
       - ${PG_PORT:-5432}:5432

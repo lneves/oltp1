@@ -33,7 +33,7 @@ public class CustomerAccountsAndPermissionsTable
 
 	private static final int PERCENT_ACCOUNT_ADDITIONAL_PERMISSIONS_0 = 60;
 	private static final int PERCENT_ACCOUNT_ADDITIONAL_PERMISSIONS_1 = 38;
-	private static final int PERCENT_ACCOUNT_ADDITIONAL_PERMISSIONS_2 = 2;
+	// private static final int PERCENT_ACCOUNT_ADDITIONAL_PERMISSIONS_2 = 2;
 
 	private final DataFileManager dfm;
 	private final CustomerTable customerTable;

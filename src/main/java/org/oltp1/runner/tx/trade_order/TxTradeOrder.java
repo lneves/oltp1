@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.oltp1.common.ErrorCtx;
@@ -570,7 +571,7 @@ public class TxTradeOrder extends TxBase
 
 	private static boolean notEquals(CharSequence a, CharSequence b)
 	{
-		return !StringUtils.equalsIgnoreCase(a, b);
+		return !Strings.CI.equals(a, b);
 	}
 
 }

@@ -17,7 +17,6 @@ public class CompanyTable implements TableGenerator<CompanyRow>
 	private static final int RNG_SKIP_ONE_ROW_COMPANY = 2;
 	private static final long RNG_SEED_TABLE_DEFAULT = 37039940L;
 	private static final long RNG_SEED_BASE_SP_RATE = 56593330L;
-	private static final long DEFAULT_LOAD_UNIT_SIZE = 1000;
 
 	private final DataFileManager dfm;
 	private final CompanyFile companyFile;

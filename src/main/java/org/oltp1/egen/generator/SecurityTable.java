@@ -127,11 +127,6 @@ public class SecurityTable implements TableGenerator<SecurityRow>
 		return row;
 	}
 
-	private double emulFp(double value)
-	{
-		float f = (float) value;
-		return (double) f;
-	}
 
 	/**
 	 * Reset the state for the next load unit.

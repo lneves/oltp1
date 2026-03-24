@@ -132,7 +132,7 @@ public class TxTradeUpdate extends TxBase
 		}
 	}
 
-	private void executeFrame2(Connection con, TxTradeUpdateInput txInput, TxTradeUpdateOutput txOutput)
+	private void executeFrame2(final Connection con, final TxTradeUpdateInput txInput, final TxTradeUpdateOutput txOutput)
 	{
 		txOutput.frame_executed = 2;
 		int num_found = 0;
@@ -200,7 +200,7 @@ public class TxTradeUpdate extends TxBase
 		}
 	}
 
-	private void executeFrame3(Connection con, TxTradeUpdateInput txInput, TxTradeUpdateOutput txOutput) throws JsonProcessingException
+	private void executeFrame3(final Connection con, final TxTradeUpdateInput txInput, final TxTradeUpdateOutput txOutput) throws JsonProcessingException
 	{
 		txOutput.frame_executed = 3;
 		int num_found = 0;
@@ -278,7 +278,7 @@ public class TxTradeUpdate extends TxBase
 	/**
 	 * A helper method to retrieve all related information for a given trade_id.
 	 */
-	private void populateFullTradeInfo(final Connection con, List<Long> tradeIds, final TxTradeUpdateOutput txOutput)
+	private void populateFullTradeInfo(final Connection con, final List<Long> tradeIds, final TxTradeUpdateOutput txOutput)
 	{
 		String tradeLst;
 		String tradesCsv = getCsv(tradeIds);

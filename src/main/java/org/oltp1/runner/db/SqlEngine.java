@@ -1,6 +1,7 @@
 package org.oltp1.runner.db;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.oltp1.common.Assert;
 
 public enum SqlEngine
@@ -143,32 +144,32 @@ public enum SqlEngine
 			throw new IllegalArgumentException("'className' and 'jdbcUrl' can not both be blank");
 		}
 
-		if ("org.postgresql.Driver".equals(className) || StringUtils.contains(jdbcUrl, "jdbc:postgresql:"))
+		if ("org.postgresql.Driver".equals(className) || Strings.CS.contains(jdbcUrl, "jdbc:postgresql:"))
 		{
 			return SqlEngine.POSTGRESQL;
 		}
 
-		if ("com.impossibl.postgres.jdbc.PGDriver".equals(className) || StringUtils.contains(jdbcUrl, "jdbc:pgsql:"))
+		if ("com.impossibl.postgres.jdbc.PGDriver".equals(className) || Strings.CS.contains(jdbcUrl, "jdbc:pgsql:"))
 		{
 			return SqlEngine.POSTGRESQL;
 		}
 
-		if (StringUtils.startsWith(className, "com.microsoft.sqlserver") || StringUtils.contains(jdbcUrl, "jdbc:sqlserver:"))
+		if (Strings.CS.startsWith(className, "com.microsoft.sqlserver") || Strings.CS.contains(jdbcUrl, "jdbc:sqlserver:"))
 		{
 			return SqlEngine.MSSQL;
 		}
 
-		if (StringUtils.startsWith(className, "net.sourceforge.jtds.") || StringUtils.contains(jdbcUrl, "jdbc:jtds:"))
+		if (Strings.CS.startsWith(className, "net.sourceforge.jtds.") || Strings.CS.contains(jdbcUrl, "jdbc:jtds:"))
 		{
 			return SqlEngine.MSSQL;
 		}
 
-		if (StringUtils.startsWith(className, "org.mariadb.jdbc.") || StringUtils.contains(jdbcUrl, "jdbc:mariadb:"))
+		if (Strings.CS.startsWith(className, "org.mariadb.jdbc.") || Strings.CS.contains(jdbcUrl, "jdbc:mariadb:"))
 		{
 			return SqlEngine.MARIADB;
 		}
 
-		if (StringUtils.startsWith(className, "oracle.jdbc.") || StringUtils.startsWith(jdbcUrl, "jdbc:oracle:"))
+		if (Strings.CS.startsWith(className, "oracle.jdbc.") || Strings.CS.startsWith(jdbcUrl, "jdbc:oracle:"))
 		{
 			return SqlEngine.ORACLE;
 		}

@@ -108,8 +108,6 @@ public class TradeGen
 	// Class used to select a random customer for whom to perform a trade.
 	private CustomerSelection customerSelection;
 
-	// Class used to get CUSTOMER table information for a specific customer
-	private CustomerTable customerTable;
 
 	// Class used to calculate T_TAX for the TRADE table
 	private CustomerTaxRateTable custTaxrateTable;
@@ -130,7 +128,6 @@ public class TradeGen
 	private Person person;
 
 	// Input files for character data generation.
-	private final CompanyFile companyFile;
 	private final SecurityFile securityFile;
 	private final List<ChargeDataFileRecord> chargeFile; // CHARGE table from the flat file
 	private final List<CommissionRateDataFileRecord> commissionRateFile; // COMMISSION_RATE table from the flat file
@@ -144,16 +141,12 @@ public class TradeGen
 	private long startFromAccount;
 	// Number of customers for this class instance
 	private long customerCount;
-	// Total number of customers in the database
-	private long totalCustomers;
+
 	// Number of customers in one load unit
 	private int loadUnitSize;
 	// Number of accounts for customers in one load unit
 	private int loadUnitAccountCount;
-	// Number of customers for 1 tpsE
-	private int scaleFactor;
-	// Number of hours of initial trades to generate
-	private int hoursOfInitialTrades;
+
 
 	// Average number of seconds between two consecutive trades
 	private double meanTimeBetweenTrades;
@@ -270,30 +263,24 @@ public class TradeGen
 		this.rnd = new TpcRandom(RNG_SEED_TRADE_GEN);
 		this.addressTable = new AddressTable(dfm, customerCount, startFromCustomer, true); // only customer addresses
 		this.customerSelection = new CustomerSelection(rnd, 0, 0, 100, startFromCustomer, loadUnitSize); // only generate customer within partition
-		this.customerTable = new CustomerTable(dfm, customerCount, startFromCustomer);
 		this.custTaxrateTable = new CustomerTaxRateTable(dfm, customerCount, startFromCustomer);
 		this.customerAccountTable = new CustomerAccountsAndPermissionsTable(dfm, loadUnitSize, customerCount, startFromCustomer);
 		this.holdingTable = new HoldingsAndTradesTable(dfm, loadUnitSize, customerCount, startFromCustomer);
-		this.brokerTable = new BrokerTable(dfm, customerCount, startFromCustomer);
+		this.brokerTable = new BrokerTable(dfm, startFromCustomer);
 		this.securityTable = new SecurityTable(dfm, customerCount, startFromCustomer);
 
 		this.person = new Person(dfm, startFromCustomer, false);
 
-		this.companyFile = dfm.getCompanyFile();
 		this.securityFile = dfm.getSecurityFile();
 		this.chargeFile = dfm.getChargeDataFile();
 		this.commissionRateFile = dfm.getCommissionRateDataFile();
 		this.statusTypeFile = dfm.getStatusTypeDataFile();
 		this.tradeTypeFile = dfm.getTradeTypeDataFile();
 		this.exchangeFile = dfm.getExchangeDataFile();
-
 		this.startFromCustomer = startFromCustomer + IDENT_T_SHIFT;
 		this.customerCount = customerCount;
-		this.totalCustomers = totalCustomers;
 		this.loadUnitSize = loadUnitSize;
 		this.loadUnitAccountCount = loadUnitSize * MAX_ACCOUNTS_PER_CUST;
-		this.scaleFactor = scaleFactor;
-		this.hoursOfInitialTrades = hoursOfInitialTrades;
 		this.meanTimeBetweenTrades = 100.0 / ABORT_TRADE * (double) scaleFactor / loadUnitSize;
 		this.meanInTheMoneySubmissionDelay = 1.0;
 		this.currentSimulatedTime = 0;
@@ -771,8 +758,6 @@ public class TradeGen
 
 		newTrade.tradeQty = TRADE_QTY_SIZES[rnd.rndIntRange(0, NUM_TRADE_QTY_SIZES - 1)];
 
-		double calculated_submissionTime = 0.0;
-		double calculated_trade_price = 0.0;
 
 		// Calculate timing based on whether it's a Market or Limit order.
 		if (newTrade.tradeType == TradeType.MARKET_BUY || newTrade.tradeType == TradeType.MARKET_SELL)
@@ -786,13 +771,12 @@ public class TradeGen
 		{
 			// Limit orders are pending until the price is met.
 			newTrade.pendingTime = currentSimulatedTime;
-			calculated_submissionTime = meeSecurity
+			newTrade.submissionTime = meeSecurity
 					.getSubmissionTime(
 							newTrade.symbolIndex,
 							newTrade.pendingTime,
 							newTrade.bidPrice,
 							newTrade.tradeType);
-			newTrade.submissionTime = calculated_submissionTime;
 
 			// Adjust for market hours: if a trade would submit after 5 PM, move it to 9 AM
 			// the next day.
@@ -809,8 +793,6 @@ public class TradeGen
 		MEESecurity.CompletionResult completion = meeSecurity.getCompletionTime(newTrade.symbolIndex, newTrade.submissionTime);
 		newTrade.completionTime = completion.completionTime;
 		newTrade.tradePrice = completion.completionPrice;
-
-		calculated_trade_price = completion.completionPrice.dollarAmount();
 
 		// For limit orders, ensure the executed price is not worse than the limit
 		// price.

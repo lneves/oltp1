@@ -22,4 +22,4 @@ services:
     entrypoint: ["/bin/sh","-lc",
       "mkdir -p /aux_data/innodb_data/logs /aux_data/innodb_logs/undo /aux_data/binlogs /aux_data/tmp_mysql
        && chown -R mysql:mysql /aux_data
-       && exec docker-entrypoint.sh mysqld"]
+       && exec docker-entrypoint.sh mariadbd"]

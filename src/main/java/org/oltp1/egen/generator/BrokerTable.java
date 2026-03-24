@@ -26,12 +26,10 @@ public class BrokerTable
 
 	private BrokerRow currentRow;
 	private long startFromCustomer;
-	private long customerCount;
 
-	public BrokerTable(DataFileManager dfm, long customerCount, long startFromCustomer)
+	public BrokerTable(DataFileManager dfm, long startFromCustomer)
 	{
 		this.dfm = dfm;
-		this.customerCount = customerCount;
 		this.startFromCustomer = startFromCustomer;
 		// The Person generator needs a random instance, but its state will be
 		// saved and restored for the deterministic name generation.
@@ -49,7 +47,6 @@ public class BrokerTable
 		if (totalBrokersInInstance != customerCount / BROKERS_DIV || (numTrades == null) || (commTotal == null))
 		{
 			this.totalBrokersInInstance = customerCount / BROKERS_DIV;
-
 		}
 
 		this.numTrades = new int[(int) totalBrokersInInstance];

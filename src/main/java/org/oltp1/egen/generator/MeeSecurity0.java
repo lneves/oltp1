@@ -1,7 +1,5 @@
 package org.oltp1.egen.generator;
 
-import org.oltp1.egen.util.TpcRandom;
-
 /**
  * A Java port of the CMEESecurity class. This class provides the price/time
  * functionality needed to emulate a security's behavior in the market. It
@@ -18,7 +16,7 @@ public class MeeSecurity0
 	private static final double MIN_SECURITY_PRICE = 20.00;
 	private static final double MAX_SECURITY_PRICE = 30.00;
 
-	private final TpcRandom random;
+
 	private final double priceRange;
 	private final int tradingTimeSoFar; // In seconds
 
@@ -26,7 +24,6 @@ public class MeeSecurity0
 	{
 		// This constructor is for data generation, where time is simulated.
 		this.tradingTimeSoFar = hoursOfInitialTrades * 3600; // Convert hours to seconds
-		this.random = new TpcRandom(0); // Seed is not critical here as it's used for stateless calculations
 		this.priceRange = MAX_SECURITY_PRICE - MIN_SECURITY_PRICE;
 	}
 

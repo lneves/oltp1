@@ -23,6 +23,11 @@ services:
         source: ${TABLESPACE_HOST_PATH:-./pg_tablespaces}
         target: /mnt/tablespaces
       - ./init:/docker-entrypoint-initdb.d
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        chown -R 70:70 /mnt/tablespaces;
+        exec /usr/local/bin/docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
     ports:
       - ${PG_PORT:-5432}:5432

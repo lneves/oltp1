@@ -12,15 +12,14 @@ import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.db.SqlEngine;
 import org.oltp1.runner.generator.TxInputGenerator;
-import org.oltp1.runner.tx.QueryFactory;
 import org.oltp1.runner.perf.TxBase;
 import org.oltp1.runner.perf.TxOutput;
 import org.oltp1.runner.perf.TxStatsCollector;
+import org.oltp1.runner.tx.QueryFactory;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TxTradeLookup extends TxBase
@@ -124,7 +123,7 @@ public class TxTradeLookup extends TxBase
 		txOutput.lst_trades_history = historyTrades;
 	}
 
-	private void executeFrame2(TxTradeLookupOutput txOutput, final TxTradeLookupInput txInput, Connection con) throws SQLException
+	private void executeFrame2(final TxTradeLookupOutput txOutput, final TxTradeLookupInput txInput, final Connection con) throws SQLException
 	{
 		List<Map<String, Object>> lstTrades = con
 				.createQuery(sql.getFrame2())
@@ -154,7 +153,7 @@ public class TxTradeLookup extends TxBase
 		txOutput.lst_trades_history = historyTrades;
 	}
 
-	private void executeFrame3(Connection con, TxTradeLookupInput txInput, TxTradeLookupOutput txOutput) throws SQLException
+	private void executeFrame3(final Connection con, final TxTradeLookupInput txInput, final TxTradeLookupOutput txOutput) throws SQLException
 	{
 		List<Map<String, Object>> lstTrades = con
 				.createQuery(sql.getFrame3())
@@ -184,7 +183,7 @@ public class TxTradeLookup extends TxBase
 		txOutput.lst_trades_history = historyTrades;
 	}
 
-	private void executeFrame4(Connection con, TxTradeLookupInput txInput, TxTradeLookupOutput txOutput)
+	private void executeFrame4(final Connection con, final TxTradeLookupInput txInput, final TxTradeLookupOutput txOutput)
 	{
 		List<Map<String, Object>> lstTrades = con
 				.createQuery(sql.getFrame4())

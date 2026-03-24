@@ -16,7 +16,6 @@ public class PipeDelimitedFileReader implements ISQLServerBulkData
 	private static final long serialVersionUID = 3703724643177850339L;
 	private final BufferedReader reader;
 	private String[] currentRow;
-	private String[] columnNames;
 	private int columnCount;
 	private boolean hasNext = true;
 
@@ -140,6 +139,4 @@ public class PipeDelimitedFileReader implements ISQLServerBulkData
 		// Scale is not applicable for VARCHAR
 		return 0;
 	}
-
-
 }

@@ -2,7 +2,7 @@ package org.oltp1.initdb;
 
 import java.nio.file.Path;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.db.SqlEngine;
 import org.slf4j.Logger;
@@ -111,13 +111,13 @@ public class DbInitializer
 
 		executeCommand(sql2oInit, "DROP DATABASE IF EXISTS tpce;");
 
-		if (StringUtils.equals(oltp1Env, "docker"))
+		if (Strings.CS.equals(oltp1Env, "docker"))
 		{
 			executeCommand(sql2oInit, "DROP TABLESPACE IF EXISTS tblsp_tpce;");
 		}
 
 		// Create database
-		if (StringUtils.equals(oltp1Env, "docker"))
+		if (Strings.CS.equals(oltp1Env, "docker"))
 		{
 			executeCommand(sql2oInit, "CREATE TABLESPACE tblsp_tpce LOCATION '/mnt/tablespaces/tblsp_tpce';");
 			executeCommand(sql2oInit, "CREATE DATABASE tpce WITH TABLESPACE=tblsp_tpce;");
