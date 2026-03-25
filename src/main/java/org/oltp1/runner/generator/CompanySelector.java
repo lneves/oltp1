@@ -1,5 +1,6 @@
 package org.oltp1.runner.generator;
 
+import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.h2.mvstore.MVMap;
@@ -37,17 +38,20 @@ public class CompanySelector
 			companyList = store.openMap("companyList");
 			companyMap = store.openMap("companyList");
 
-			con
-					.createQuery("""
+			// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
+			try (Connection sql2oConn = sqlCtx.getSql2o().open(); java.sql.Connection jdbcConn = sql2oConn.getJdbcConnection(); java.sql.Statement stmt = jdbcConn.createStatement();)
+			{
+				stmt.setFetchSize(1000);
+
+				String query = ("""
 							SELECT s_symb, s_issue, co_id, co_name
 							FROM security
 							INNER JOIN company ON s_co_id = co_id;
-							""")
-					.executeAndFetchTable()
-					.rows()
-					.stream()
-					.forEach(r -> {
-
+						""");
+				try (java.sql.ResultSet r = stmt.executeQuery(query))
+				{
+					while (r.next())
+					{
 						Company c = new Company(
 								r.getString("s_symb"),
 								r.getString("s_issue"),
@@ -56,7 +60,13 @@ public class CompanySelector
 
 						companyList.put(ix.getAndIncrement(), c);
 						companyMap.put(r.getString("s_symb"), c);
-					});
+					}
+				}
+			}
+			catch (SQLException e)
+			{
+				throw new RuntimeException(e);
+			}
 
 			store.commit();
 			store.compactFile(60000); // max compact time: 1 minute

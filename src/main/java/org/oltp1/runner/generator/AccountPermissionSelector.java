@@ -1,5 +1,6 @@
 package org.oltp1.runner.generator;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +12,6 @@ import org.oltp1.runner.model.AccountPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sql2o.Connection;
-import org.sql2o.Query;
 
 public class AccountPermissionSelector
 {
@@ -25,32 +25,39 @@ public class AccountPermissionSelector
 	{
 		OffHeapStore offHeap = new OffHeapStore();
 		MVStore store = new MVStore.Builder().fileStore(offHeap).open();
+		aclStore = store.openMap("acl");
 
-		try (Connection con = sqlCtx.getSql2o().open())
+		// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
+		try (Connection sql2oConn = sqlCtx.getSql2o().open(); java.sql.Connection jdbcConn = sql2oConn.getJdbcConnection(); java.sql.Statement stmt = jdbcConn.createStatement();)
 		{
-			aclStore = store.openMap("acl");
+			stmt.setFetchSize(1000);
 
-			Query tx = con.createQuery("""
+			String query = ("""
 					SELECT ap_ca_id, ap_tax_id, ap_l_name, ap_f_name, ap_acl
 					FROM account_permission;
 					""");
 
-			tx
-					.executeAndFetchTable()
-					.rows()
-					.stream()
-					.forEach(r -> {
-						AccountPermission ap = new AccountPermission(
-								r.getString("ap_tax_id"),
-								r.getString("ap_f_name"),
-								r.getString("ap_l_name"),
-								r.getString("ap_acl").equals("0000"));
+			try (java.sql.ResultSet r = stmt.executeQuery(query))
+			{
+				while (r.next())
+				{
+					AccountPermission ap = new AccountPermission(
+							r.getString("ap_tax_id"),
+							r.getString("ap_f_name"),
+							r.getString("ap_l_name"),
+							r.getString("ap_acl").equals("0000"));
 
-						long currentCaid = r.getLong("ap_ca_id");
+					long currentCaid = r.getLong("ap_ca_id");
 
-						addToMultimap(currentCaid, ap);
-					});
+					addToMultimap(currentCaid, ap);
+				}
+			}
 		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
+
 		store.commit();
 		store.compactFile(60000); // max compact time: 1 minute
 
