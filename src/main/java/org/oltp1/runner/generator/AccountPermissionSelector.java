@@ -1,17 +1,16 @@
 package org.oltp1.runner.generator;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.OffHeapStore;
+import org.oltp1.runner.db.JdbcQuery;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.model.AccountPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sql2o.Connection;
 
 public class AccountPermissionSelector
 {
@@ -28,35 +27,25 @@ public class AccountPermissionSelector
 		aclStore = store.openMap("acl");
 
 		// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
-		try (Connection sql2oConn = sqlCtx.getSql2o().open(); java.sql.Connection jdbcConn = sql2oConn.getJdbcConnection(); java.sql.Statement stmt = jdbcConn.createStatement();)
-		{
-			stmt.setFetchSize(1000);
+		JdbcQuery jdbc = new JdbcQuery(sqlCtx);
+		int fetchSize = 1000;
 
-			String query = ("""
-					SELECT ap_ca_id, ap_tax_id, ap_l_name, ap_f_name, ap_acl
-					FROM account_permission;
-					""");
+		String query = """
+				SELECT ap_ca_id, ap_tax_id, ap_l_name, ap_f_name, ap_acl
+				FROM account_permission;
+				""";
 
-			try (java.sql.ResultSet r = stmt.executeQuery(query))
-			{
-				while (r.next())
-				{
-					AccountPermission ap = new AccountPermission(
-							r.getString("ap_tax_id"),
-							r.getString("ap_f_name"),
-							r.getString("ap_l_name"),
-							r.getString("ap_acl").equals("0000"));
+		jdbc.executeQuery(query, fetchSize, r -> {
+			AccountPermission ap = new AccountPermission(
+					r.getString("ap_tax_id"),
+					r.getString("ap_f_name"),
+					r.getString("ap_l_name"),
+					r.getString("ap_acl").equals("0000"));
 
-					long currentCaid = r.getLong("ap_ca_id");
+			long currentCaid = r.getLong("ap_ca_id");
 
-					addToMultimap(currentCaid, ap);
-				}
-			}
-		}
-		catch (SQLException e)
-		{
-			throw new RuntimeException(e);
-		}
+			addToMultimap(currentCaid, ap);
+		});
 
 		store.commit();
 		store.compactFile(60000); // max compact time: 1 minute
@@ -72,7 +61,6 @@ public class AccountPermissionSelector
 				.filter(ap -> ap.isOwner == isOnwner)
 				.findAny()
 				.orElseGet(() -> getAnyAcl(accountId));
-
 	}
 
 	private void addToMultimap(Long accId, AccountPermission ap)

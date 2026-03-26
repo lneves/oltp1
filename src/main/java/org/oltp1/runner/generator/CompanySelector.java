@@ -1,11 +1,11 @@
 package org.oltp1.runner.generator;
 
-import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.OffHeapStore;
+import org.oltp1.runner.db.JdbcQuery;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.model.Company;
 import org.slf4j.Logger;
@@ -39,34 +39,26 @@ public class CompanySelector
 			companyMap = store.openMap("companyList");
 
 			// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
-			try (Connection sql2oConn = sqlCtx.getSql2o().open(); java.sql.Connection jdbcConn = sql2oConn.getJdbcConnection(); java.sql.Statement stmt = jdbcConn.createStatement();)
-			{
-				stmt.setFetchSize(1000);
+			JdbcQuery jdbc = new JdbcQuery(sqlCtx);
+			int fetchSize = 1000;
 
-				String query = ("""
-							SELECT s_symb, s_issue, co_id, co_name
-							FROM security
-							INNER JOIN company ON s_co_id = co_id;
-						""");
-				try (java.sql.ResultSet r = stmt.executeQuery(query))
-				{
-					while (r.next())
-					{
-						Company c = new Company(
-								r.getString("s_symb"),
-								r.getString("s_issue"),
-								r.getLong("co_id"),
-								r.getString("co_name"));
+			String query = ("""
+						SELECT s_symb, s_issue, co_id, co_name
+						FROM security
+						INNER JOIN company ON s_co_id = co_id;
+					""");
 
-						companyList.put(ix.getAndIncrement(), c);
-						companyMap.put(r.getString("s_symb"), c);
-					}
-				}
-			}
-			catch (SQLException e)
-			{
-				throw new RuntimeException(e);
-			}
+			jdbc.executeQuery(query, fetchSize, r -> {
+
+				Company c = new Company(
+						r.getString("s_symb"),
+						r.getString("s_issue"),
+						r.getLong("co_id"),
+						r.getString("co_name"));
+
+				companyList.put(ix.getAndIncrement(), c);
+				companyMap.put(r.getString("s_symb"), c);
+			});
 
 			store.commit();
 			store.compactFile(60000); // max compact time: 1 minute
