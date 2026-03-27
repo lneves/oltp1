@@ -112,4 +112,10 @@ public class TxStatsCollector
 			return txSummary;
 		}
 	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("TxStatsCollector [txSummary=%s]", getStats());
+	}
 }

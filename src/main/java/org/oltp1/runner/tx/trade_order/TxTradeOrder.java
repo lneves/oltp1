@@ -417,7 +417,7 @@ public class TxTradeOrder extends TxBase
 			taxAmount = (sellValue.doubleValue() - buyValue.doubleValue()) * taxRate;
 		}
 
-		// Get administrative fees (e.g. trading charge, commision rate)
+		// Get administrative fees (e.g. trading charge, commission rate)
 		Row frow = con
 				.createQuery(sql.getFees())
 				.addParameter("cust_tier", session.get("cust_tier"))

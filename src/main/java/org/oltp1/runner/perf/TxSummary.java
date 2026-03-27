@@ -123,4 +123,10 @@ public class TxSummary
 	{
 		targetMixPct = d;
 	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("TxSummary [txName=%s, targetMixPct=%s, count=%s, minTs=%s, maxTs=%s, warningCount=%s, erroCount=%s, rollbackCount=%s elapsedTime=%s]", txName, targetMixPct, count, minTs, maxTs, warningCount, erroCount, rollbackCount, elapsedTime);
+	}
 }
