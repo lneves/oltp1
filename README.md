@@ -53,7 +53,7 @@ While the older TPC-C benchmark is still more commonly used, TPC-E is the TPC's 
 
 ### Prerequisites
 
-* Java 21 or higher (build only)
+* Java 25 or higher (build only)
 * Apache Maven 3.5.x or higher (build only)
 * Docker
 * Git
@@ -71,7 +71,7 @@ There are three steps necessary to run the benchmark:
 You can run OLTP-1 either as a **native binary** or as a **fat JAR**:
 
 - **Native binary (recommended for most):** download the platform binary from **[Releases](https://github.com/lneves/oltp1/releases)** and invoke it as `oltp1 <command> [options]`.
-- **Fat JAR (requires Java 21+):** download the `oltp1.jar` from **[Releases](https://github.com/lneves/oltp1/releases)** and invoke it as `java -jar oltp1.jar <command> [options]`.
+- **Fat JAR (requires Java 25+):** download the `oltp1.jar` from **[Releases](https://github.com/lneves/oltp1/releases)** and invoke it as `java -jar oltp1.jar <command> [options]`.
 
 Both distributions support the same commands and flags. The fat JAR is **often faster** for some operations (notably data generation) due to JVM JIT optimizations.
 
