@@ -156,7 +156,7 @@ public class Oltp1Driver implements Callable<Integer>
 				log.info("Total Run: {}s (Warmup: {}s, Measure: {}s)", totalDurationSec, warmupDurationSec, measureDurationSec);
 
 				log.info("Starting warmup run");
-				txMixRunner.runTxMix(measureDurationSec);
+				txMixRunner.runTxMix(warmupDurationSec);
 
 				log.info("Starting measurement run");
 				txMixRunner.runTxMix(measureDurationSec);
