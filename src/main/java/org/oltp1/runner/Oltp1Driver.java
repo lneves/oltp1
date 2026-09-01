@@ -84,7 +84,10 @@ public class Oltp1Driver implements Callable<Integer>
 	{
 		try
 		{
-			SqlContext sqlCtx = engine.createSqlContext(host, port, "tpce", user, password, clients);
+			int asyncMeePoolSize = calculateMeePoolSize(clients);
+			int maximumConnPoolSize = clients + asyncMeePoolSize + 2;
+
+			SqlContext sqlCtx = engine.createSqlContext(host, port, "tpce", user, password, maximumConnPoolSize);
 
 			final String dbInfo = getDbInfo(sqlCtx);
 
@@ -102,9 +105,7 @@ public class Oltp1Driver implements Callable<Integer>
 			else
 			{
 				final TxInputGenerator txInputGen = new TxInputGenerator(sqlCtx);
-
-				int asyncPoolSize = calculatePoolSize(clients);
-				final ExecutorService mee = ThreadPoolBuilder.newThreadPool(asyncPoolSize, "run-async");
+				final ExecutorService mee = ThreadPoolBuilder.newThreadPool(asyncMeePoolSize, "run-async");
 
 				// # Read-Only Transactions
 				// Broker Volume Mid-Heavy R/O 4.9%
@@ -210,7 +211,7 @@ public class Oltp1Driver implements Callable<Integer>
 		return warmupDurationSec;
 	}
 
-	private int calculatePoolSize(final int clients)
+	private int calculateMeePoolSize(final int clients)
 	{
 		final double tradeOrderPct = 0.101; // The transaction's mix percentage
 		final double scalingFactor = 0.5; // A factor for short-lived tasks

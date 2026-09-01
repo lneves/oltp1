@@ -10,15 +10,14 @@ public class SqlContext
 {
 	private static final int MSSQL_TRANSACTION_ISOLATION_SNAPSHOT = 0x1000; // SQLServerConnection.TRANSACTION_SNAPSHOT; = 0x1000;
 
-	public static SqlContext buildSqlContext(String jdbcUrl, String jdbcDriver, int connections)
+	public static SqlContext buildSqlContext(String jdbcUrl, String jdbcDriver, int maximumPoolSize)
 	{
 		SqlEngine engine = SqlEngine.detect(jdbcDriver, jdbcUrl);
 
 		HikariConfig c = new HikariConfig();
 		c.setDriverClassName(jdbcDriver);
-		c.setMaximumPoolSize(connections);
+		c.setMaximumPoolSize(maximumPoolSize);
 		c.setJdbcUrl(jdbcUrl);
-		c.setMaximumPoolSize(connections);
 		c.setConnectionTestQuery(engine.getBaselineQuery());
 
 		HikariDataSource ds = new HikariDataSource(c);

@@ -182,7 +182,7 @@ public enum SqlEngine
 		return this.createSqlContext(host, port, getDefaultConnectDatabase(), user, password, clients);
 	}
 
-	public SqlContext createSqlContext(String host, int port, String database, String user, String password, int clients)
+	public SqlContext createSqlContext(String host, int port, String database, String user, String password, int maximumPoolSize)
 	{
 		switch (this)
 		{
@@ -198,7 +198,7 @@ public enum SqlEngine
 							user,
 							password);
 
-			return SqlContext.buildSqlContext(pgUri, "org.postgresql.Driver", clients);
+			return SqlContext.buildSqlContext(pgUri, "org.postgresql.Driver", maximumPoolSize);
 
 		case MSSQL:
 			int msPort = (port == 0) ? 1433 : port;
@@ -211,7 +211,7 @@ public enum SqlEngine
 							user,
 							password);
 
-			return SqlContext.buildSqlContext(msUri, "com.microsoft.sqlserver.jdbc.SQLServerDriver", clients);
+			return SqlContext.buildSqlContext(msUri, "com.microsoft.sqlserver.jdbc.SQLServerDriver", maximumPoolSize);
 
 		case MARIADB:
 			int mariaPort = (port == 0) ? 3306 : port;
@@ -224,7 +224,7 @@ public enum SqlEngine
 							user,
 							password);
 
-			return SqlContext.buildSqlContext(mariaUri, "org.mariadb.jdbc.Driver", clients);
+			return SqlContext.buildSqlContext(mariaUri, "org.mariadb.jdbc.Driver", maximumPoolSize);
 
 		default:
 			throw new IllegalArgumentException(
