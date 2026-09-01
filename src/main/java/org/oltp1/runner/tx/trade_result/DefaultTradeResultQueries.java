@@ -82,6 +82,28 @@ public class DefaultTradeResultQueries implements TradeResultQueries
 	}
 
 	@Override
+	public String insertHoldingSummaryBuy()
+	{
+		return """
+				INSERT INTO holding_summary
+				(hs_ca_id, hs_s_symb, hs_qty)
+				VALUES
+				(:acct_id, :symbol, :trade_qty);
+				""";
+	}
+
+	@Override
+	public String updateHoldingSummaryBuy()
+	{
+		return """
+				UPDATE holding_summary
+				SET hs_qty = (:hs_qty + :trade_qty)
+				WHERE hs_ca_id = :acct_id
+				  AND hs_s_symb = :symbol;
+				""";
+	}
+
+	@Override
 	public String getHoldingAsc()
 	{
 		return """

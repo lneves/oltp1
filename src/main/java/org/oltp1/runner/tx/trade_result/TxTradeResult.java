@@ -427,23 +427,21 @@ public class TxTradeResult extends TxBase
 		if (hsQty == 0)
 		{
 			con
-					.createQuery(sql.insertHoldingSummary())
+					.createQuery(sql.insertHoldingSummaryBuy())
 					.addParameter("acct_id", session.get("acct_id"))
 					.addParameter("symbol", session.get("symbol"))
 					.addParameter("trade_qty", tradeQty)
 					.executeUpdate();
-
 		}
 		else if (-hsQty != tradeQty)
 		{
 			con
-					.createQuery(sql.updateHoldingSummary())
+					.createQuery(sql.updateHoldingSummaryBuy())
 					.addParameter("hs_qty", session.get("hs_qty"))
 					.addParameter("acct_id", session.get("acct_id"))
 					.addParameter("symbol", session.get("symbol"))
-					.addParameter("trade_qty", hsQty + tradeQty)
+					.addParameter("trade_qty", tradeQty)
 					.executeUpdate();
-
 		}
 
 		if (hsQty < 0)

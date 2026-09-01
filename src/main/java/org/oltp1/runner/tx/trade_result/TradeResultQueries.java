@@ -16,6 +16,10 @@ public interface TradeResultQueries
 
 	String updateHoldingSummary();
 
+	String insertHoldingSummaryBuy();
+
+	String updateHoldingSummaryBuy();
+
 	String getHoldingAsc();
 
 	String getHoldingDesc();
