@@ -162,23 +162,26 @@ public class TxTradeOrder extends TxBase
 						long t_trade_qty = session.getAsLong("trade_qty");
 						double t_trade_price = session.getAsDouble("market_price");
 
+						List<Ticker> batch;
+
 						synchronized (tickers)
 						{
 							tickers.add(new Ticker(t_symbol, t_trade_price, t_trade_qty));
+							if (tickers.size() < 10)
+								return;
 
-							if (tickers.size() >= Math.min(10, max_feed_len))
-							{
-								TxMarketFeedInput txMktFeedIn = new TxMarketFeedInput(
-										TradeStatus.SUBMITTED,
-										TradeType.LIMIT_BUY,
-										TradeType.LIMIT_SELL,
-										TradeType.STOP_LOSS,
-										tickers,
-										tickers.size());
-								txMarketFeed.offer(txMktFeedIn);
-								tickers.clear();
-							}
+							batch = List.copyOf(tickers);
+							tickers.clear();
 						}
+
+						TxMarketFeedInput txMktFeedIn = new TxMarketFeedInput(
+								TradeStatus.SUBMITTED,
+								TradeType.LIMIT_BUY,
+								TradeType.LIMIT_SELL,
+								TradeType.STOP_LOSS,
+								batch,
+								batch.size());
+						txMarketFeed.offer(txMktFeedIn);
 					}
 				};
 
