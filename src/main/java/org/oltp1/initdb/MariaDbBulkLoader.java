@@ -1,6 +1,7 @@
 package org.oltp1.initdb;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 import org.oltp1.common.ErrorAnalyser;
@@ -35,8 +36,8 @@ public class MariaDbBulkLoader extends BulkLoader
 				Path dataFile = getDataFile(fileName);
 				if (!dataFile.toFile().exists())
 				{
-					log.warn("Data file not found, skipping: {}", fileName);
-					continue;
+					String emsg = String.format("Data file not found: %s", fileName);
+					throw new FileNotFoundException(emsg);
 				}
 
 				String tableName = getTableName(fileName);

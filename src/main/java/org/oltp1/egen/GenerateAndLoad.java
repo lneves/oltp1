@@ -183,7 +183,7 @@ public class GenerateAndLoad
 	private void generateAndLoadTaxrate() throws IOException
 	{
 		TaxrateTable generator = new TaxrateTable(dfm);
-		generateAndLoadSimpleFixedTable("taxrate", "Taxrate.txt", generator);
+		generateAndLoadSimpleFixedTable("taxrate", "TaxRate.txt", generator);
 	}
 
 	private void generateAndLoadTradeType() throws IOException
