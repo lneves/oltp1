@@ -80,7 +80,7 @@ public abstract class TxBase implements Tx
 		catch (Throwable t)
 		{
 			final long stop = System.nanoTime();
-			final double elapsed = stop - start;
+			final double elapsed = (stop - start) / 1000000.0;
 
 			statCollector.incrementErrors();
 			statCollector.offerMaxTs(stop);

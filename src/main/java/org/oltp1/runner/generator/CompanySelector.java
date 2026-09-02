@@ -36,7 +36,7 @@ public class CompanySelector
 			AtomicInteger ix = new AtomicInteger(0);
 
 			companyList = store.openMap("companyList");
-			companyMap = store.openMap("companyList");
+			companyMap = store.openMap("companyMap");
 
 			// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
 			JdbcQuery jdbc = new JdbcQuery(sqlCtx);

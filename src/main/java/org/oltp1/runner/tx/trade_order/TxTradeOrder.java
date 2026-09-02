@@ -20,13 +20,13 @@ import org.oltp1.runner.generator.TxInputGenerator;
 import org.oltp1.runner.model.Ticker;
 import org.oltp1.runner.model.TradeStatus;
 import org.oltp1.runner.model.TradeType;
+import org.oltp1.runner.perf.TxBase;
+import org.oltp1.runner.perf.TxOutput;
+import org.oltp1.runner.perf.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
 import org.oltp1.runner.tx.market_feed.TxMarketFeed;
 import org.oltp1.runner.tx.market_feed.TxMarketFeedInput;
 import org.oltp1.runner.tx.trade_result.TxTradeResult;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import org.sql2o.data.Row;
@@ -323,7 +323,7 @@ public class TxTradeOrder extends TxBase
 				// by selling current holdings for this security. The customer may have
 				// multiple holdings at different prices for this security (representing
 				// multiple purchases different times).
-				List<Row> holdingList = getHoldingList(con, txInput);
+				List<Row> holdingList = getHoldingList(con, txInput, session);
 
 				holdingList.forEach(r -> {
 
@@ -368,7 +368,7 @@ public class TxTradeOrder extends TxBase
 				// by covering short positions currently held for this security. The customer
 				// may have multiple holdings at different prices for this security
 				// (representing multiple purchases at different times).
-				List<Row> holdingList = getHoldingList(con, txInput);
+				List<Row> holdingList = getHoldingList(con, txInput, session);
 
 				holdingList.forEach(r -> {
 
@@ -461,7 +461,7 @@ public class TxTradeOrder extends TxBase
 		session.put("type_is_sell", isSell);
 
 		double buy_value = buyValue.doubleValue();
-		double sell_value = buyValue.doubleValue();
+		double sell_value = sellValue.doubleValue();
 
 		if ((sell_value > buy_value) &&
 				((taxStatus == 1) || (taxStatus == 2)) &&
@@ -548,7 +548,7 @@ public class TxTradeOrder extends TxBase
 		txOutput.output = tradeOrder;
 	}
 
-	private List<Row> getHoldingList(final Connection con, final TxTradeOrderInput txInput)
+	private List<Row> getHoldingList(final Connection con, final TxTradeOrderInput txInput, final TradeOrderSession session)
 	{
 		String holdingQStmt;
 		if (txInput.is_lifo)
@@ -567,7 +567,7 @@ public class TxTradeOrder extends TxBase
 		return con
 				.createQuery(holdingQStmt)
 				.addParameter("acct_id", txInput.acct_id)
-				.addParameter("symbol", txInput.symbol)
+				.addParameter("symbol", StringUtils.firstNonBlank(session.getAsString("symbol"), txInput.symbol))
 				.executeAndFetchTable()
 				.rows();
 	}

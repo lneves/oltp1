@@ -54,9 +54,4 @@ public class SqlContext
 	{
 		return sqlEngine;
 	}
-
-	public int getIsolationLevel()
-	{
-		return this.isolationLevel;
-	}
 }

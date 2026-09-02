@@ -18,11 +18,13 @@ public class MarketWatchInputGenerator
 
 	private final CustomerSelector customerSelector;
 	private final IndustrySelector industrySelector;
+	private final CompanySelector companySelector;
 
-	public MarketWatchInputGenerator(CustomerSelector customerSelector, IndustrySelector industrySelector)
+	public MarketWatchInputGenerator(CustomerSelector customerSelector, IndustrySelector industrySelector, CompanySelector companySelector)
 	{
 		this.customerSelector = customerSelector;
 		this.industrySelector = industrySelector;
+		this.companySelector = companySelector;
 	}
 
 	/**
@@ -52,6 +54,7 @@ public class MarketWatchInputGenerator
 			// By Industry: Select a random industry name.
 			int industryIndex = random.rndIntRange(0, industrySelector.getLen() - 1);
 			input.industry_name = industrySelector.get(industryIndex).getInName();
+			input.starting_co_id = companySelector.forSymbol(null)
 		}
 		else if (threshold <= MW_PERCENT_BY_INDUSTRY + MW_PERCENT_BY_WATCH_LIST)
 		{
