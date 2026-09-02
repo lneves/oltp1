@@ -1,12 +1,12 @@
 {
   "reflection": [
-	{
+    {
       "type": "ch.qos.logback.core.status.NopStatusListener",
       "allDeclaredConstructors": true,
       "allPublicConstructors": true,
       "allDeclaredMethods": true,
       "allPublicMethods": true
-	},
+    },
     {
       "type": "[Lcom.zaxxer.hikari.util.ConcurrentBag$IConcurrentBagEntry;"
     },
@@ -1032,6 +1032,30 @@
     },
     {
       "glob": "ddl-scripts/mariadb/5_db_settings.sql"
+    },
+    {
+      "glob": "ddl-scripts/mariadb/6_analyze_table.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/1_create_table.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/3_create_keys.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/4_create_index.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/5_create_fk.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/6_create_sequence.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/7_analyze_table.sql"
+    },
+    {
+      "glob": "ddl-scripts/orioledb/8_db_settings.sql"
     },
     {
       "glob": "ddl-scripts/postgresql/1_create_table.sql"

@@ -88,6 +88,9 @@ public class DbInitializer
 
 		log.info("Applying database settings...");
 		scriptExecutor.executeScriptFromResource(getScriptPath("5_db_settings.sql"));
+		
+		log.info("Analyzing tables...");
+		scriptExecutor.executeScriptFromResource(getScriptPath("6_analyze_table.sql"));
 	}
 
 	private void initPostgresql() throws Exception
