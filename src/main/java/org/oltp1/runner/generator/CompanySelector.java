@@ -22,7 +22,7 @@ public class CompanySelector
 	private final long maxCoId;
 
 	private final MVMap<Integer, Company> companyList;
-	private final MVMap<String, Company> companyMap;
+	private final MVMap<String, Company> companySymbolMap;
 
 	private final int storeLen;
 
@@ -36,7 +36,7 @@ public class CompanySelector
 			AtomicInteger ix = new AtomicInteger(0);
 
 			companyList = store.openMap("companyList");
-			companyMap = store.openMap("companyMap");
+			companySymbolMap = store.openMap("companySymbolMap");
 
 			// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
 			JdbcQuery jdbc = new JdbcQuery(sqlCtx);
@@ -57,7 +57,7 @@ public class CompanySelector
 						r.getString("co_name"));
 
 				companyList.put(ix.getAndIncrement(), c);
-				companyMap.put(r.getString("s_symb"), c);
+				companySymbolMap.put(r.getString("s_symb"), c);
 			});
 
 			store.commit();
@@ -108,7 +108,7 @@ public class CompanySelector
 
 	public Company forSymbol(String symbol)
 	{
-		return companyMap.get(symbol);
+		return companySymbolMap.get(symbol);
 	}
 
 	public int getActiveCompanyCount()

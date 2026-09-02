@@ -54,7 +54,7 @@ public class TxInputGenerator
 		securityDetailInputGenerator = new SecurityDetailInputGenerator(companySelector);
 		brokerVolumeInputGenerator = new BrokerVolumeInputGenerator(brokerSelector, sectorSelector);
 		customerPositionInputGenerator = new CustomerPositionInputGenerator(customerSelector);
-		marketWatchInputGenerator = new MarketWatchInputGenerator(customerSelector, industrySelector);
+		marketWatchInputGenerator = new MarketWatchInputGenerator(customerSelector, industrySelector, companySelector);
 		tradeLookupInputGenerator = new TradeLookupInputGenerator(customerSelector, companySelector, environementSelector);
 		tradeStatusInputGenerator = new TradeStatusInputGenerator(customerSelector);
 		tradeOrderInputGenerator = new TradeOrderInputGenerator(customerSelector, companySelector, accountPermissionSelector);

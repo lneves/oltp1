@@ -54,7 +54,8 @@ public class MarketWatchInputGenerator
 			// By Industry: Select a random industry name.
 			int industryIndex = random.rndIntRange(0, industrySelector.getLen() - 1);
 			input.industry_name = industrySelector.get(industryIndex).getInName();
-			input.starting_co_id = companySelector.forSymbol(null)
+			input.starting_co_id = companySelector.getMinCoId();
+			input.ending_co_id = companySelector.getMaxCoId();
 		}
 		else if (threshold <= MW_PERCENT_BY_INDUSTRY + MW_PERCENT_BY_WATCH_LIST)
 		{
