@@ -1,5 +1,6 @@
 package org.oltp1.egen.model;
 
+import java.util.Locale;
 import java.util.StringJoiner;
 
 public class CommissionRateRow
@@ -20,7 +21,7 @@ public class CommissionRateRow
 				.add(CR_EX_ID)
 				.add(String.valueOf(CR_FROM_QTY))
 				.add(String.valueOf(CR_TO_QTY))
-				.add(String.format("%.2f", CR_RATE))
+				.add(String.format(Locale.ROOT, "%.2f", CR_RATE))
 				.toString();
 	}
 }

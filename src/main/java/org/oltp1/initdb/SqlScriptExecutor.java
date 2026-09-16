@@ -43,13 +43,13 @@ public class SqlScriptExecutor
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)))
 		{
 			String content = readFullContent(reader);
-			
+
 			// Handle SQL Server variable substitution
 			if (dataDir != null && sqlContext.getSqlEngine().name().equals("MSSQL"))
 			{
 				content = content.replace("$(DATA_DIR)", dataDir);
 			}
-			
+
 			List<String> statements = parseStatements(content);
 			executeStatements(statements);
 		}
@@ -69,8 +69,9 @@ public class SqlScriptExecutor
 	private List<String> parseStatements(String content)
 	{
 		List<String> statements = new ArrayList<>();
-		
-		// Handle SQL Server GO statements and PostgreSQL/MySQL semicolon-terminated statements
+
+		// Handle SQL Server GO statements and PostgreSQL/MySQL semicolon-terminated
+		// statements
 		if (sqlContext.getSqlEngine().name().equals("MSSQL"))
 		{
 			// Split on GO statements for SQL Server
@@ -104,17 +105,16 @@ public class SqlScriptExecutor
 	private boolean isComment(String statement)
 	{
 		String trimmed = statement.trim();
-		return trimmed.startsWith("--") || 
-		       trimmed.startsWith("/*") || 
-		       trimmed.toUpperCase().startsWith("PRINT") ||
-		       trimmed.toUpperCase().startsWith("USE ") ||
-		       trimmed.isEmpty();
+		return trimmed.startsWith("--") ||
+				trimmed.startsWith("/*") ||
+				trimmed.toUpperCase().startsWith("PRINT") ||
+				trimmed.isEmpty();
 	}
 
 	private void executeStatements(List<String> statements) throws SQLException
 	{
 		try (Connection conn = sqlContext.getSql2o().open().getJdbcConnection();
-		     Statement stmt = conn.createStatement())
+				Statement stmt = conn.createStatement())
 		{
 			for (String sql : statements)
 			{

@@ -1,5 +1,6 @@
 package org.oltp1.egen.model;
 
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.util.DateTime;
@@ -36,13 +37,13 @@ public class SecurityRow
 				.add(String.valueOf(S_NUM_OUT))
 				.add(S_START_DATE.toFormattedString(10))
 				.add(S_EXCH_DATE.toFormattedString(10))
-				.add(String.format("%.2f", S_PE))
-				.add(String.format("%.2f", S_52WK_HIGH))
+				.add(String.format(Locale.ROOT, "%.2f", S_PE))
+				.add(String.format(Locale.ROOT, "%.2f", S_52WK_HIGH))
 				.add(S_52WK_HIGH_DATE.toFormattedString(10))
-				.add(String.format("%.2f", S_52WK_LOW))
+				.add(String.format(Locale.ROOT, "%.2f", S_52WK_LOW))
 				.add(S_52WK_LOW_DATE.toFormattedString(10))
-				.add(String.format("%.2f", S_DIVIDEND))
-				.add(String.format("%.2f", S_YIELD))
+				.add(String.format(Locale.ROOT, "%.2f", S_DIVIDEND))
+				.add(String.format(Locale.ROOT, "%.2f", S_YIELD))
 				.toString();
 	}
 }

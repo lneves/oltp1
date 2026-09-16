@@ -7,6 +7,8 @@ package org.oltp1.runner.tx.trade_update;
 public interface TradeUpdateQueries
 {
 	// Frame 1
+	String countTradesFrame1();
+
 	String updateTradesFrame1();
 
 	// Frame 2

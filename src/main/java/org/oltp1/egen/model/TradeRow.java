@@ -1,6 +1,7 @@
 package org.oltp1.egen.model;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.io.AppendableRow;
@@ -40,13 +41,13 @@ public class TradeRow implements AppendableRow
 				.add(T_IS_CASH ? "1" : "0")
 				.add(T_S_SYMB)
 				.add(String.valueOf(T_QTY))
-				.add(String.format("%.2f", T_BID_PRICE))
+				.add(String.format(Locale.ROOT, "%.2f", T_BID_PRICE))
 				.add(String.valueOf(T_CA_ID))
 				.add(T_EXEC_NAME)
-				.add(String.format("%.2f", T_TRADE_PRICE))
-				.add(String.format("%.2f", T_CHRG))
-				.add(String.format("%.2f", T_COMM))
-				.add(String.format("%.2f", T_TAX))
+				.add(String.format(Locale.ROOT, "%.2f", T_TRADE_PRICE))
+				.add(String.format(Locale.ROOT, "%.2f", T_CHRG))
+				.add(String.format(Locale.ROOT, "%.2f", T_COMM))
+				.add(String.format(Locale.ROOT, "%.2f", T_TAX))
 				.add(T_LIFO ? "1" : "0")
 				.toString();
 	}

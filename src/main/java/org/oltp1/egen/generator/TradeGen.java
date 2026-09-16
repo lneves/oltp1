@@ -16,7 +16,6 @@ import org.oltp1.egen.model.AccountSecurity;
 import org.oltp1.egen.model.AdditionalTradeInfo;
 import org.oltp1.egen.model.BrokerRow;
 import org.oltp1.egen.model.CashTransactionRow;
-import org.oltp1.egen.model.ExchangeType;
 import org.oltp1.egen.model.HoldingHistoryRow;
 import org.oltp1.egen.model.HoldingInfo;
 import org.oltp1.egen.model.HoldingRow;
@@ -108,7 +107,6 @@ public class TradeGen
 	// Class used to select a random customer for whom to perform a trade.
 	private CustomerSelection customerSelection;
 
-
 	// Class used to calculate T_TAX for the TRADE table
 	private CustomerTaxRateTable custTaxrateTable;
 
@@ -129,8 +127,8 @@ public class TradeGen
 
 	// Input files for character data generation.
 	private final SecurityFile securityFile;
-	private final List<ChargeDataFileRecord> chargeFile; // CHARGE table from the flat file
-	private final List<CommissionRateDataFileRecord> commissionRateFile; // COMMISSION_RATE table from the flat file
+	private final ChargeLookup chargeLookup; // CHARGE table, indexed by (trade type, tier)
+	private final CommissionRateLookup commissionRateLookup; // COMMISSION_RATE table, indexed by (tier, trade type, exchange)
 	private final List<StatusTypeDataFileRecord> statusTypeFile; // STATUS_TYPE table from the flat file
 	private final List<TradeTypeDataFileRecord> tradeTypeFile; // TRADE_TYPE table from the flat file
 	private final List<ExchangeDataFileRecord> exchangeFile; // EXCHANGE table from the flat file
@@ -146,7 +144,6 @@ public class TradeGen
 	private int loadUnitSize;
 	// Number of accounts for customers in one load unit
 	private int loadUnitAccountCount;
-
 
 	// Average number of seconds between two consecutive trades
 	private double meanTimeBetweenTrades;
@@ -272,11 +269,11 @@ public class TradeGen
 		this.person = new Person(dfm, startFromCustomer, false);
 
 		this.securityFile = dfm.getSecurityFile();
-		this.chargeFile = dfm.getChargeDataFile();
-		this.commissionRateFile = dfm.getCommissionRateDataFile();
 		this.statusTypeFile = dfm.getStatusTypeDataFile();
 		this.tradeTypeFile = dfm.getTradeTypeDataFile();
 		this.exchangeFile = dfm.getExchangeDataFile();
+		this.chargeLookup = new ChargeLookup(dfm.getChargeDataFile(), tradeTypeFile);
+		this.commissionRateLookup = new CommissionRateLookup(dfm.getCommissionRateDataFile(), tradeTypeFile, exchangeFile);
 		this.startFromCustomer = startFromCustomer + IDENT_T_SHIFT;
 		this.customerCount = customerCount;
 		this.loadUnitSize = loadUnitSize;
@@ -758,7 +755,6 @@ public class TradeGen
 
 		newTrade.tradeQty = TRADE_QTY_SIZES[rnd.rndIntRange(0, NUM_TRADE_QTY_SIZES - 1)];
 
-
 		// Calculate timing based on whether it's a Market or Limit order.
 		if (newTrade.tradeType == TradeType.MARKET_BUY || newTrade.tradeType == TradeType.MARKET_SELL)
 		{
@@ -928,61 +924,30 @@ public class TradeGen
 	 */
 	private void generateTradeCommission()
 	{
-		int custTier = getCurrentCustTier();
 		int tradeQty = getCurrentTradeQty();
-		TradeType tradeType = getCurrentTradeType();
-		String tradeTypeId = tradeTypeFile.get(tradeType.ordinal()).tt_id;
-		ExchangeType exchange = securityFile.getExchangeIndex(getCurrentSecurityIndex());
-		String exchangeId = exchangeFile.get(exchange.ordinal()).ex_id;
 
-		for (CommissionRateDataFileRecord crRecord : commissionRateFile)
-		{
-			boolean tierMatch = custTier == crRecord.cr_c_tier;
-			boolean typeMatch = tradeTypeId.equals(crRecord.cr_tt_id);
-			boolean exchangeMatch = exchangeId.equals(crRecord.cr_ex_id);
-			boolean qtyMatch = tradeQty >= crRecord.cr_from_qty && tradeQty <= crRecord.cr_to_qty;
+		CommissionRateDataFileRecord rule = commissionRateLookup.find(
+				getCurrentCustTier(),
+				getCurrentTradeType().ordinal(),
+				securityFile.getExchangeIndex(getCurrentSecurityIndex()).ordinal(),
+				tradeQty);
 
-			if (tierMatch && typeMatch && exchangeMatch && qtyMatch)
-			{
-				Money tradeValue = getCurrentTradePrice().multiply(tradeQty);
+		Money tradeValue = getCurrentTradePrice().multiply(tradeQty);
 
-				completedTradeInfo.commission = tradeValue.multiply(crRecord.cr_rate).divide(100);
-
-				return; // Found the matching rule, exit.
-			}
-		}
-		// This should not be reached if configuration is correct.
-		throw new IllegalStateException("Could not find a matching commission rate for the trade.");
+		completedTradeInfo.commission = tradeValue.multiply(rule.cr_rate).divide(100);
 	}
 
 	/**
 	 * Calculates the flat trade charge.
 	 * <p>
-	 * This method iterates through the charge rules and finds the one that matches
-	 * the current trade's customer tier and type. It then assigns the corresponding
-	 * charge amount to the {@code completedTradeInfo}.
+	 * Looks up the pre-indexed CHARGE rule for the current trade's customer tier
+	 * and type and assigns its charge amount to {@code completedTradeInfo}.
 	 */
 	private void generateTradeCharge()
 	{
-		for (ChargeDataFileRecord chargeRow : chargeFile)
-		{
-			// Search for the customer tier
-			if (getCurrentCustTier() == chargeRow.ch_c_tier)
-			{
-				TradeTypeDataFileRecord tradeTypeRow = tradeTypeFile.get(getCurrentTradeType().ordinal());
+		ChargeDataFileRecord chargeRow = chargeLookup.find(getCurrentTradeType().ordinal(), getCurrentCustTier());
 
-				// Search for the trade type
-				if (tradeTypeRow.tt_id.equals(chargeRow.ch_tt_id))
-				{
-					// Found the correct charge
-					completedTradeInfo.charge = new Money(chargeRow.ch_chrg);
-					return;
-				}
-			}
-		}
-
-		// This should not be reached if configuration is correct.
-		throw new IllegalStateException("Could not find a matching charge rule for the trade.");
+		completedTradeInfo.charge = new Money(chargeRow.ch_chrg);
 	}
 
 	/**

@@ -7,10 +7,12 @@ import java.util.Map;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
@@ -24,15 +26,14 @@ public class TxSecurityDetail extends TxBase
 	private final Sql2o sql2o;
 
 	private final TxInputGenerator txInputGen;
-	private final SecurityDetailQueries sql;
+	private final SecurityDetailDialect sql;
 
-	public TxSecurityDetail(TxInputGenerator txInputGen, SqlContext sqlCtx)
+	public TxSecurityDetail(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(new TxStatsCollector("Security-Detail"));
-
+		super(metrics, new TxStatsCollector(TransactionSpec.SECURITY_DETAIL));
 		this.txInputGen = txInputGen;
 		this.sql2o = sqlCtx.getSql2o();
-		this.sql = QueryFactory.getQueries(SecurityDetailQueries.class, sqlCtx.getSqlEngine());
+		this.sql = QueryFactory.getQueries(SecurityDetailDialect.class, sqlCtx.getSqlEngine());
 	}
 
 	@Override
@@ -45,7 +46,6 @@ public class TxSecurityDetail extends TxBase
 		try (Connection con = sql2o.beginTransaction())
 		{
 			executeFrame1(con, txInput, txOutput);
-
 			con.commit();
 		}
 		catch (Throwable t)
@@ -62,7 +62,7 @@ public class TxSecurityDetail extends TxBase
 	{
 		Map<String, Object> sdInfo1 = con
 				.createQuery(sql.getInfo1())
-				.addParameter("symbol", txInput.symbol)
+				.addParameter("symbol", txInput.symbol())
 				.executeAndFetchTable()
 				.asList()
 				.stream()
@@ -89,23 +89,23 @@ public class TxSecurityDetail extends TxBase
 
 		List<Map<String, Object>> lstSdInfo4 = con
 				.createQuery(sql.getInfo4())
-				.addParameter("max_rows_to_return", txInput.max_rows_to_return)
-				.addParameter("symbol", txInput.symbol)
-				.addParameter("start_day", txInput.start_day)
+				.addParameter("max_rows_to_return", txInput.maxRowsToReturn())
+				.addParameter("symbol", txInput.symbol())
+				.addParameter("start_day", txInput.startDay())
 				.executeAndFetchTable()
 				.asList();
 
 		Map<String, Object> sdInfo5 = con
 				.createQuery(sql.getInfo5())
-				.addParameter("symbol", txInput.symbol)
+				.addParameter("symbol", txInput.symbol())
 				.executeAndFetchTable()
 				.asList()
-				.get(0);
+				.getFirst();
 
 		List<Map<String, Object>> lstSdInfo6;
 		List<Map<String, Object>> lstSdInfo7;
 
-		if (txInput.access_lob_flag)
+		if (txInput.accessLobFlag())
 		{
 			lstSdInfo6 = con
 					.createQuery(sql.getInfo6())
@@ -149,7 +149,7 @@ public class TxSecurityDetail extends TxBase
 		}
 		else if (news_len != max_news_len)
 		{
-			txOutput.setStatus(-512);
+			txOutput.setStatus(-513);
 			txOutput.setStatusMessage("news_len != max_news_len");
 		}
 	}

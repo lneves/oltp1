@@ -4,25 +4,27 @@ import org.apache.commons.lang3.StringUtils;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
 public class TxMarketWatch extends TxBase
 {
-	private final MarketWatchQueries sql;
+	private final MarketWatchDialect sql;
 	private final Sql2o sql2o;
 
 	private final TxInputGenerator txInputGen;
 
-	public TxMarketWatch(TxInputGenerator txInputGen, SqlContext sqlCtx)
+	public TxMarketWatch(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(new TxStatsCollector("Market-Watch"));
+		super(metrics, new TxStatsCollector(TransactionSpec.MARKET_WATCH));
 		this.txInputGen = txInputGen;
-		this.sql = QueryFactory.getQueries(MarketWatchQueries.class, sqlCtx.getSqlEngine());
+		this.sql = QueryFactory.getQueries(MarketWatchDialect.class, sqlCtx.getSqlEngine());
 		this.sql2o = sqlCtx.getSql2o();
 	}
 
@@ -33,7 +35,7 @@ public class TxMarketWatch extends TxBase
 
 		final TxMarketWatchInput txInput = txInputGen.generateMarketWatchInput();
 
-		if ((txInput.acct_id == 0) && (txInput.c_id == 0) && StringUtils.isBlank(txInput.industry_name))
+		if ((txInput.acctId() == 0) && (txInput.cId() == 0) && StringUtils.isBlank(txInput.industryName()))
 		{
 			txOutput.setStatus(-411);
 			return txOutput;
@@ -57,32 +59,32 @@ public class TxMarketWatch extends TxBase
 
 	private void executeFrame1(final Connection con, final TxMarketWatchInput txInput, final TxMarketWatchOutput txOutput)
 	{
-		double pct_change;
+		Double pct_change;
 
-		if (txInput.c_id != 0)
+		if (txInput.cId() != 0)
 		{
 			pct_change = con
 					.createQuery(sql.getPctChangeByCustomer())
-					.addParameter("cust_id", txInput.c_id)
-					.addParameter("start_date", txInput.start_day)
+					.addParameter("cust_id", txInput.cId())
+					.addParameter("start_date", txInput.startDay())
 					.executeScalar(Double.class);
 		}
-		else if (StringUtils.isNotBlank(txInput.industry_name))
+		else if (StringUtils.isNotBlank(txInput.industryName()))
 		{
 			pct_change = con
 					.createQuery(sql.getPctChangeByIndustry())
-					.addParameter("industry_name", txInput.industry_name)
-					.addParameter("start_date", txInput.start_day)
-					.addParameter("starting_co_id", txInput.starting_co_id)
-					.addParameter("ending_co_id", txInput.ending_co_id)
+					.addParameter("industry_name", txInput.industryName())
+					.addParameter("start_date", txInput.startDay())
+					.addParameter("starting_co_id", txInput.startingCoId())
+					.addParameter("ending_co_id", txInput.endingCoId())
 					.executeScalar(Double.class);
 		}
-		else if (txInput.acct_id != 0)
+		else if (txInput.acctId() != 0)
 		{
 			pct_change = con
 					.createQuery(sql.getPctChangeByAccount())
-					.addParameter("acct_id", txInput.acct_id)
-					.addParameter("start_date", txInput.start_day)
+					.addParameter("acct_id", txInput.acctId())
+					.addParameter("start_date", txInput.startDay())
 					.executeScalar(Double.class);
 		}
 		else
@@ -90,6 +92,7 @@ public class TxMarketWatch extends TxBase
 			throw new IllegalArgumentException("Bad input data in the Market-Watch transaction");
 		}
 
-		txOutput.pct_change = pct_change;
+		txOutput.pct_change = (pct_change != null) ? pct_change.doubleValue() : 0.0;
+		;
 	}
 }

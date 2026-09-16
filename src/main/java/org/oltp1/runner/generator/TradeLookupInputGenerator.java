@@ -35,14 +35,20 @@ public class TradeLookupInputGenerator
 	private static final int TL_A_VALUE_FOR_TIME_GEN_FRAME4 = 4095;
 	private static final int TL_S_VALUE_FOR_TIME_GEN_FRAME4 = 16;
 
-	private static final long TL_TRADE_SHIFT = 200_000_000_000_000L;
+	// BackOffFromEndTime defaults from DriverParamSettings.h (CTradeLookupSettings)
+	private static final int TL_BACKOFF_SECONDS_FRAME2 = 4 * 8 * 3600; // four 8-hour days
+	private static final int TL_BACKOFF_SECONDS_FRAME3 = 200 * 60;
+	private static final int TL_BACKOFF_SECONDS_FRAME4 = 500 * 60;
 
+	// private final TxInputGenerator txInputGen;
+	private final TradeTracker tradeTracker;
 	private final CustomerSelector customerSelector;
 	private final CompanySelector companySelector;
 	private final EnvironementSelector environementSelector;
 
-	public TradeLookupInputGenerator(CustomerSelector customerSelector, CompanySelector companySelector, EnvironementSelector environementSelector)
+	public TradeLookupInputGenerator(TradeTracker tradeTracker, CustomerSelector customerSelector, CompanySelector companySelector, EnvironementSelector environementSelector)
 	{
+		this.tradeTracker = tradeTracker;
 		this.customerSelector = customerSelector;
 		this.companySelector = companySelector;
 		this.environementSelector = environementSelector;
@@ -60,13 +66,11 @@ public class TradeLookupInputGenerator
 		CRandom random = ThreadLocalCRandom.get();
 
 		int threshold = random.rndIntRange(1, 100);
-		long maxOfInitialTradeId = environementSelector.getMaxInitialTradeId() - TL_TRADE_SHIFT;
 		int daysOfinitialTrades = environementSelector.getDaysOfInitialTrades();
 
 		if (threshold <= TL_PERCENT_FRAME_1)
 		{
 			// ### FRAME 1: Lookup by a list of Trade IDs ###
-			input.frame_to_execute = 1;
 			input.frame_to_execute = 1;
 			input.max_trades = TL_MAX_ROWS_FRAME_1;
 
@@ -80,7 +84,8 @@ public class TradeLookupInputGenerator
 
 			while (tradeIdSet.size() < TL_MAX_ROWS_FRAME_1)
 			{
-				long t = GenUtils.nonUniformTradeId(random, maxOfInitialTradeId, TL_A_VALUE_FOR_TRADE_ID_GEN_FRAME1, TL_S_VALUE_FOR_TRADE_ID_GEN_FRAME1);
+				long maxActiveTradeId = tradeTracker.getInitialMaxTradeId();
+				long t = GenUtils.nonUniformTradeId(random, maxActiveTradeId, TL_A_VALUE_FOR_TRADE_ID_GEN_FRAME1, TL_S_VALUE_FOR_TRADE_ID_GEN_FRAME1);
 				tradeIdSet.add(t);
 			}
 
@@ -96,11 +101,17 @@ public class TradeLookupInputGenerator
 			input.max_trades = TL_MAX_ROWS_FRAME_2;
 			input.acct_id = customerSelector.randomAccId();
 
-			LocalDateTime s_dts = GenUtils.nonUniformTradeDts(random, daysOfinitialTrades, TL_A_VALUE_FOR_TIME_GEN_FRAME2, TL_S_VALUE_FOR_TIME_GEN_FRAME2);
-			// LocalDateTime e_dts = GenUtils.endOfInitialTrades(daysOfinitialTrades);
+			LocalDateTime s_dts = GenUtils
+					.nonUniformTradeDts(
+							random,
+							daysOfinitialTrades,
+							TL_BACKOFF_SECONDS_FRAME2,
+							TL_A_VALUE_FOR_TIME_GEN_FRAME2,
+							TL_S_VALUE_FOR_TIME_GEN_FRAME2);
 
 			input.start_trade_dts = s_dts;
-			input.end_trade_dts = environementSelector.getEndOfInitialTrades();
+			// Reference: the interval ends at the end of the initial trade period.
+			input.end_trade_dts = GenUtils.endOfInitialTrades(daysOfinitialTrades);
 		}
 		else if (threshold <= TL_PERCENT_FRAME_1 + TL_PERCENT_FRAME_2 + TL_PERCENT_FRAME_3)
 		{
@@ -110,11 +121,17 @@ public class TradeLookupInputGenerator
 			int securityIndex = (int) random.nonUniformRandom(0, companySelector.getActiveSecuritiesCount() - 1, TL_A_VALUE_FOR_SYMBOL_FRAME3, TL_S_VALUE_FOR_SYMBOL_FRAME3);
 			input.symbol = companySelector.get(securityIndex).getSymbol();
 
-			LocalDateTime s_dts = GenUtils.nonUniformTradeDts(random, daysOfinitialTrades, TL_A_VALUE_FOR_TIME_GEN_FRAME3, TL_S_VALUE_FOR_TIME_GEN_FRAME3);
-			// LocalDateTime e_dts = GenUtils.endOfInitialTrades(daysOfinitialTrades);
+			LocalDateTime s_dts = GenUtils
+					.nonUniformTradeDts(
+							random,
+							daysOfinitialTrades,
+							TL_BACKOFF_SECONDS_FRAME3,
+							TL_A_VALUE_FOR_TIME_GEN_FRAME3,
+							TL_S_VALUE_FOR_TIME_GEN_FRAME3);
 
 			input.start_trade_dts = s_dts;
-			input.end_trade_dts = environementSelector.getEndOfInitialTrades();
+			// Reference: the interval ends at the end of the initial trade period.
+			input.end_trade_dts = GenUtils.endOfInitialTrades(daysOfinitialTrades);
 
 			input.max_acct_id = customerSelector.getMaxAccId();
 		}
@@ -124,7 +141,13 @@ public class TradeLookupInputGenerator
 			input.frame_to_execute = 4;
 			input.acct_id = customerSelector.randomAccId();
 
-			LocalDateTime s_dts = GenUtils.nonUniformTradeDts(random, daysOfinitialTrades, TL_A_VALUE_FOR_TIME_GEN_FRAME4, TL_S_VALUE_FOR_TIME_GEN_FRAME4);
+			LocalDateTime s_dts = GenUtils
+					.nonUniformTradeDts(
+							random,
+							daysOfinitialTrades,
+							TL_BACKOFF_SECONDS_FRAME4,
+							TL_A_VALUE_FOR_TIME_GEN_FRAME4,
+							TL_S_VALUE_FOR_TIME_GEN_FRAME4);
 			input.start_trade_dts = s_dts;
 		}
 		return input;

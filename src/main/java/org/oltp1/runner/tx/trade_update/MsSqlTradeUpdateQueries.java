@@ -7,6 +7,21 @@ package org.oltp1.runner.tx.trade_update;
 public class MsSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 {
 	@Override
+	public String countTradesFrame1()
+	{
+		return """
+				SELECT
+					COUNT(*) AS num_found
+				FROM
+					trade
+				WHERE
+					t_id IN (
+						SELECT CAST(value AS bigint) FROM STRING_SPLIT(:trade_lst,',')
+						);
+				""";
+	}
+
+	@Override
 	public String updateTradesFrame1()
 	{
 		return """

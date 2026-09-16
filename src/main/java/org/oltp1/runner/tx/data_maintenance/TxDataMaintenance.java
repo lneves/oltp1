@@ -10,10 +10,12 @@ import java.util.regex.Pattern;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import org.sql2o.data.Row;
@@ -22,15 +24,23 @@ public class TxDataMaintenance extends TxBase
 {
 	private final Sql2o sql2o;
 	private final TxInputGenerator txInputGen;
-	private final DataMaintenanceQueries sql;
+	private final DataMaintenanceDialect sql;
 
-	public TxDataMaintenance(TxInputGenerator txInputGen, SqlContext sqlCtx)
+	public TxDataMaintenance(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(new TxStatsCollector("Data-Maintenance"));
+		this(
+				txInputGen,
+				sqlCtx.getSql2o(),
+				QueryFactory.getQueries(DataMaintenanceDialect.class, sqlCtx.getSqlEngine()),
+				metrics);
+	}
 
+	TxDataMaintenance(TxInputGenerator txInputGen, Sql2o sql2o, DataMaintenanceDialect sql, BenchmarkMetrics metrics)
+	{
+		super(metrics, new TxStatsCollector(TransactionSpec.DATA_MAINTENANCE));
 		this.txInputGen = txInputGen;
-		this.sql2o = sqlCtx.getSql2o();
-		this.sql = QueryFactory.getQueries(DataMaintenanceQueries.class, sqlCtx.getSqlEngine());
+		this.sql2o = sql2o;
+		this.sql = sql;
 	}
 
 	@Override
@@ -46,16 +56,23 @@ public class TxDataMaintenance extends TxBase
 			switch (txInput.table_name)
 			{
 			case "ACCOUNT_PERMISSION":
-				String currentAcl = con
+				Row currentAcl = con
 						.createQuery(sql.getApAcl())
 						.addParameter("acct_id", txInput.acct_id)
-						.executeScalar(String.class);
+						.executeAndFetchTable()
+						.rows()
+						.stream()
+						.findFirst()
+						.orElse(null);
+
 				if (currentAcl != null)
 				{
-					String newAcl = "1111".equals(currentAcl) ? "0011" : "1111";
+					String newAcl = "1111".equals(currentAcl.getString("ap_acl")) ? "0011" : "1111";
+
 					rowsAffected = con
 							.createQuery(sql.updateApAcl())
 							.addParameter("acct_id", txInput.acct_id)
+							.addParameter("tax_id", currentAcl.getString("ap_tax_id"))
 							.addParameter("ap_acl", newAcl)
 							.executeUpdate()
 							.getResult();
@@ -68,13 +85,17 @@ public class TxDataMaintenance extends TxBase
 								.addParameter("c_id", txInput.c_id)
 								.executeAndFetchTable()
 								.rows()
-								.getFirst()
+								.stream()
+								.findFirst()
+								.orElse(null)
 						: con
 								.createQuery(sql.getCompanyAddress())
 								.addParameter("co_id", txInput.co_id)
 								.executeAndFetchTable()
 								.rows()
-								.getFirst();
+								.stream()
+								.findFirst()
+								.orElse(null);
 
 				if (addressInfo != null)
 				{
@@ -235,12 +256,13 @@ public class TxDataMaintenance extends TxBase
 						.rows();
 				if (watchList.size() > 0)
 				{
-					int middleIndex = watchList.size() / 2;
+					int middleIndex = (watchList.size() - 1) / 2;
 					String symbolToReplace = watchList.get(middleIndex).getString("wi_s_symb");
 					long wl_id = watchList.get(middleIndex).getLong("wi_wl_id");
 					String newSymbol = con
 							.createQuery(sql.getNextSecurityForWatchList())
 							.addParameter("wl_id", wl_id)
+							.addParameter("old_symbol", symbolToReplace)
 							.executeScalar(String.class);
 					if (newSymbol != null)
 						rowsAffected = con
@@ -261,10 +283,11 @@ public class TxDataMaintenance extends TxBase
 		catch (Throwable t)
 		{
 			ErrorCtx ectx = new ErrorCtx(t);
-			String fullMsg = String.format("Data-Maintenance transaction failed for table '%s' -> ", txInput.table_name, ectx.toString());
+			String fullMsg = String.format("Data-Maintenance transaction failed for table '%s' -> %s", txInput.table_name, ectx.toString());
 			txOutput.setStatus(-1);
 			txOutput.setStatusMessage(fullMsg);
 		}
+
 		return txOutput;
 	}
 }

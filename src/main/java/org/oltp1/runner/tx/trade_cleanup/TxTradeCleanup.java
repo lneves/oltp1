@@ -3,10 +3,11 @@ package org.oltp1.runner.tx.trade_cleanup;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
@@ -14,14 +15,22 @@ public class TxTradeCleanup extends TxBase
 {
 	private final Sql2o sql2o;
 	private final TxInputGenerator txInputGen;
-	private final TradeCleanupQueries sql;
+	private final TradeCleanupDialect sql;
 
 	public TxTradeCleanup(TxInputGenerator txInputGen, SqlContext sqlCtx)
 	{
-		super(new TxStatsCollector("Trade-Cleanup"));
+		this(
+				txInputGen,
+				sqlCtx.getSql2o(),
+				QueryFactory.getQueries(TradeCleanupDialect.class, sqlCtx.getSqlEngine()));
+	}
+
+	TxTradeCleanup(TxInputGenerator txInputGen, Sql2o sql2o, TradeCleanupDialect sql)
+	{
+		super(null, new TxStatsCollector(TransactionSpec.TRADE_CLEANUP));
 		this.txInputGen = txInputGen;
-		this.sql2o = sqlCtx.getSql2o();
-		this.sql = QueryFactory.getQueries(TradeCleanupQueries.class, sqlCtx.getSqlEngine());
+		this.sql2o = sql2o;
+		this.sql = sql;
 	}
 
 	@Override
@@ -32,7 +41,6 @@ public class TxTradeCleanup extends TxBase
 
 		try (Connection con = sql2o.beginTransaction())
 		{
-
 			con
 					.createQuery(sql.insertTradeHistory1())
 					.addParameter("st_id", txInput.st_submitted_id)
@@ -55,14 +63,14 @@ public class TxTradeCleanup extends TxBase
 			int cleanedCount = con.getResult();
 
 			con
-					.createQuery(sql.updateTrade2())
+					.createQuery(sql.insertTradeHistory2())
 					.addParameter("start_trade_id", txInput.start_trade_id)
 					.addParameter("st_submitted_id", txInput.st_submitted_id)
 					.addParameter("st_canceled_id", txInput.st_canceled_id)
 					.executeUpdate();
 
 			con
-					.createQuery(sql.insertTradeHistory2())
+					.createQuery(sql.updateTrade2())
 					.addParameter("start_trade_id", txInput.start_trade_id)
 					.addParameter("st_submitted_id", txInput.st_submitted_id)
 					.addParameter("st_canceled_id", txInput.st_canceled_id)

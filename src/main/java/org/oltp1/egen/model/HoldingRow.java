@@ -1,6 +1,7 @@
 package org.oltp1.egen.model;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.io.AppendableRow;
@@ -23,11 +24,11 @@ public class HoldingRow implements AppendableRow
 				.add(String.valueOf(H_CA_ID))
 				.add(H_S_SYMB)
 				.add(H_DTS.toFormattedString(12)) // YYYY-MM-DD HH:mm:ss.SSS
-				.add(String.format("%.2f", H_PRICE))
+				.add(String.format(Locale.ROOT, "%.2f", H_PRICE))
 				.add(String.valueOf(H_QTY))
 				.toString();
 	}
-	
+
 	@Override
 	public void writeObject(Appendable out) throws IOException
 	{

@@ -1,6 +1,7 @@
 package org.oltp1.runner.generator;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
@@ -28,45 +29,47 @@ public class CompanySelector
 
 	public CompanySelector(SqlContext sqlCtx)
 	{
-		try (Connection con = sqlCtx.getSql2o().open();)
-		{
-			OffHeapStore offHeap = new OffHeapStore();
-			MVStore store = new MVStore.Builder().fileStore(offHeap).open();
+		OffHeapStore offHeap = new OffHeapStore();
+		MVStore store = new MVStore.Builder().fileStore(offHeap).autoCommitDisabled().open();
 
-			AtomicInteger ix = new AtomicInteger(0);
+		companyList = store.openMap("companyList");
+		companySymbolMap = store.openMap("companySymbolMap");
 
-			companyList = store.openMap("companyList");
-			companySymbolMap = store.openMap("companySymbolMap");
+		// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
+		JdbcQuery jdbc = new JdbcQuery(sqlCtx);
+		int fetchSize = 1000;
 
-			// fallback to raw JDBC, sql2o does not expose the "fetchSize" property
-			JdbcQuery jdbc = new JdbcQuery(sqlCtx);
-			int fetchSize = 1000;
+		String query = ("""
+					SELECT s_symb, s_issue, co_id, co_name
+					FROM security
+					INNER JOIN company ON s_co_id = co_id;
+				""");
+		
+		final AtomicInteger ix = new AtomicInteger(0);
 
-			String query = ("""
-						SELECT s_symb, s_issue, co_id, co_name
-						FROM security
-						INNER JOIN company ON s_co_id = co_id;
-					""");
+		jdbc.executeQuery(query, fetchSize, r -> {
 
-			jdbc.executeQuery(query, fetchSize, r -> {
+			Company c = new Company(
+					r.getString("s_symb"),
+					r.getString("s_issue"),
+					r.getLong("co_id"),
+					r.getString("co_name"));
 
-				Company c = new Company(
-						r.getString("s_symb"),
-						r.getString("s_issue"),
-						r.getLong("co_id"),
-						r.getString("co_name"));
+			companyList.put(ix.getAndIncrement(), c);
+			companySymbolMap.put(r.getString("s_symb"), c);
+			
+			if (ix.get() % 1000 == 0)
+			{
+				store.commit();
+			}
+		});
 
-				companyList.put(ix.getAndIncrement(), c);
-				companySymbolMap.put(r.getString("s_symb"), c);
-			});
+		store.commit();
+		store.compactFile(60000); // max compact time: 1 minute
 
-			store.commit();
-			store.compactFile(60000); // max compact time: 1 minute
+		storeLen = ix.get();
 
-			storeLen = ix.get();
-
-			log.info("Loaded {} securities from database", storeLen);
-		}
+		log.info("Loaded {} securities from database", storeLen);
 
 		try (Connection con = sqlCtx.getSql2o().open())
 		{

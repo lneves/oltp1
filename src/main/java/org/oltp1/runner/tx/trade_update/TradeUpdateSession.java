@@ -1,6 +1,6 @@
 package org.oltp1.runner.tx.trade_update;
 
-import org.oltp1.runner.perf.TxSession;
+import org.oltp1.runner.runtime.TxSession;
 
 public class TradeUpdateSession extends TxSession
 {

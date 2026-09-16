@@ -4,8 +4,20 @@ package org.oltp1.runner.tx.data_maintenance;
  * Provides the database agnostic SQL queries for the Data-Maintenance
  * transaction.
  */
-public abstract class DefaultDataMaintenanceQueries implements DataMaintenanceQueries
+public abstract class DefaultDataMaintenanceQueries implements DataMaintenanceDialect
 {
+	
+	@Override
+	public String getNextSecurityForWatchList()
+	{
+		return "SELECT s_symb FROM security WHERE s_symb > :old_symbol AND s_symb NOT IN (SELECT wi_s_symb FROM watch_item WHERE wi_wl_id = :wl_id) ORDER BY s_symb OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;";
+	}
+
+	@Override
+	public String getApAcl()
+	{
+		return "SELECT ap_acl, ap_tax_id FROM account_permission WHERE ap_ca_id = :acct_id ORDER BY ap_acl desc OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;";
+	}
 
 	@Override
 	public String getAllExchanges()
@@ -40,7 +52,7 @@ public abstract class DefaultDataMaintenanceQueries implements DataMaintenanceQu
 	@Override
 	public String getCustomerTaxrateIds()
 	{
-		return "SELECT cx_tx_id FROM customer_taxrate WHERE cx_c_id = :c_id";
+		return "SELECT cx_tx_id FROM customer_taxrate WHERE cx_c_id = :c_id AND (cx_tx_id LIKE 'US%' OR cx_tx_id LIKE 'CN%') ORDER BY cx_tx_id OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;";
 	}
 
 	@Override
@@ -64,7 +76,7 @@ public abstract class DefaultDataMaintenanceQueries implements DataMaintenanceQu
 	@Override
 	public String updateApAcl()
 	{
-		return "UPDATE account_permission SET ap_acl = :ap_acl WHERE ap_ca_id = :acct_id";
+		return "UPDATE account_permission SET ap_acl = :ap_acl WHERE ap_ca_id = :acct_id AND ap_tax_id = :tax_id";
 	}
 
 	@Override

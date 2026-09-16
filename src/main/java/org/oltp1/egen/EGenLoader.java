@@ -35,9 +35,8 @@ public class EGenLoader implements Callable<Integer>
 	@Option(names = "-w", description = "Number of 8-hour Workdays of initial trades to populate.", defaultValue = "300")
 	private int daysOfInitialTrades;
 
-	@Option(names = "-o", description = "Directory for output flat files.", required = true)
+	@Option(names = "-o", description = "Directory for output flat files.", defaultValue = "flat_out")
 	private File outDir;
-
 
 	// Table Generation Flags
 	@Option(names = "-x", description = "Generate all tables.")
@@ -169,6 +168,16 @@ public class EGenLoader implements Callable<Integer>
 					.printf(
 							"ERROR: The specified number of 8-Hour Workdays (-w %d) must be non-zero.%n",
 							daysOfInitialTrades);
+			isValid = false;
+		}
+
+		if ((8 * 3600 * 1000 / scaleFactor) % 100 != 0)
+		{
+			// rejects -f values where completed-trades-per-8h isn't an integral multiple of
+			// 100 (the abort-ID reservation depends on it)
+			System.err
+					.printf("ERROR: -f must satisfy (8*3600*1000/f) % 100 == 0");
+
 			isValid = false;
 		}
 

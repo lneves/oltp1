@@ -1,11 +1,25 @@
 package org.oltp1.runner.tx.trade_update;
 
 /**
- * Provides the MariaDB specific SQL queries for the Trade-Update
- * transaction.
+ * Provides the MariaDB specific SQL queries for the Trade-Update transaction.
  */
 public class MariaDbTradeUpdateQueries extends DefaultTradeUpdateQueries
 {
+
+	@Override
+	public String countTradesFrame1()
+	{
+		return """
+				SELECT
+					COUNT(*) AS num_found
+				FROM
+					trade
+				WHERE
+					t_id IN (
+						SELECT value FROM JSON_TABLE(:trade_lst, '$[*]' COLUMNS (value bigint PATH '$')) tid
+						);
+				""";
+	}
 
 	@Override
 	public String updateTradesFrame1()

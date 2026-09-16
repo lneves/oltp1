@@ -1,6 +1,6 @@
 package org.oltp1.runner.tx.trade_cleanup;
 
-import org.oltp1.runner.perf.TxOutput;
+import org.oltp1.runner.runtime.TxOutput;
 
 public class TxTradeCleanupOutput extends TxOutput
 {

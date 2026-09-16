@@ -1,6 +1,7 @@
 package org.oltp1.runner.tx.trade_result;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -12,34 +13,37 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
+import org.oltp1.runner.generator.TxInputGenerator;
 import org.oltp1.runner.model.TradeStatus;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import org.sql2o.data.Row;
 
 public class TxTradeResult extends TxBase
 {
-	private final Queue<Map<String, Object>> mq = new ConcurrentLinkedQueue<>();
-
 	private final Sql2o sql2o;
-	private final TradeResultQueries sql;
+	private final TradeResultDialect sql;
+	private final TxInputGenerator txInputGen;
+	private final Queue<TxTradeResultInput> mq = new ConcurrentLinkedQueue<>();
 
-	public TxTradeResult(SqlContext sqlCtx, TxStatsCollector stats)
+	public TxTradeResult(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(stats);
-
+		super(metrics, new TxStatsCollector(TransactionSpec.TRADE_RESULT));
+		this.txInputGen = txInputGen;
 		this.sql2o = sqlCtx.getSql2o();
-		this.sql = QueryFactory.getQueries(TradeResultQueries.class, sqlCtx.getSqlEngine());
+		this.sql = QueryFactory.getQueries(TradeResultDialect.class, sqlCtx.getSqlEngine());
 	}
 
-	public void offer(Map<String, Object> meeMsg)
+	public TxTradeResultOutput process(TxTradeResultInput txIn)
 	{
-		mq.offer(meeMsg);
-		super.execute();
+		mq.offer(txIn);
+		return (TxTradeResultOutput) super.execute();
 	}
 
 	@Override
@@ -47,7 +51,7 @@ public class TxTradeResult extends TxBase
 	{
 		TxTradeResultOutput txOutput = new TxTradeResultOutput();
 
-		Map<String, Object> txInput = mq.poll();
+		TxTradeResultInput txInput = mq.poll();
 
 		if (txInput == null)
 		{
@@ -57,9 +61,9 @@ public class TxTradeResult extends TxBase
 		}
 
 		final TradeResultSession session = new TradeResultSession();
-		session.putAll(txInput);
+		session.put("trade_id", txInput.tradeId());
+		session.put("requested_price", txInput.tradePrice());
 
-		// try (Connection con = sql2o.beginTransaction(sqlCtx.getIsolationLevel()))
 		try (Connection con = sql2o.beginTransaction())
 		{
 			executeFrame1(con, txOutput, session);
@@ -100,6 +104,8 @@ public class TxTradeResult extends TxBase
 
 			executeFrame6(con, txOutput, session);
 
+			con.commit();
+
 			Map<String, Object> out = new HashMap<>();
 			out.put("acct_id", session.get("acct_id"));
 			out.put("acct_bal", session.get("acct_bal"));
@@ -119,6 +125,19 @@ public class TxTradeResult extends TxBase
 
 	private void executeFrame1(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
+		Long claimedTradeId = con
+				.createQuery(sql.claimTrade())
+				.addParameter("trade_id", session.get("trade_id"))
+				.addParameter("st_submitted_id", TradeStatus.SUBMITTED.id)
+				.executeScalar(Long.class);
+
+		if (claimedTradeId == null)
+		{
+			txOutput.setStatus(-811);
+			txOutput.setStatusMessage("trade not found or not in SUBMITTED state");
+			return;
+		}
+
 		List<Map<String, Object>> tradeInfo = con
 				.createQuery(sql.getTradeInfo())
 				.addParameter("trade_id", session.get("trade_id"))
@@ -128,12 +147,20 @@ public class TxTradeResult extends TxBase
 		if (tradeInfo.size() != 1)
 		{
 			txOutput.setStatus(-811);
+			txOutput.setStatusMessage("num_found != 1");
+			return;
 		}
-		else
-		{
-			session.put("num_found", tradeInfo.size());
-			session.putAll(tradeInfo.get(0));
-		}
+
+		session.put("num_found", tradeInfo.size());
+		session.putAll(tradeInfo.get(0));
+
+		Integer hsQty = con
+				.createQuery(sql.getHoldingSummaryForUpdate())
+				.addParameter("acct_id", session.get("acct_id"))
+				.addParameter("symbol", session.get("symbol"))
+				.executeScalar(Integer.class);
+
+		session.put("hs_qty", hsQty == null ? 0 : hsQty);
 	}
 
 	private void executeFrame2(final Connection con, final TxOutput txOutput, final TradeResultSession session)
@@ -168,6 +195,7 @@ public class TxTradeResult extends TxBase
 
 		double capitalGain = session.getAsDouble("sell_value") - session.getAsDouble("buy_value");
 		double taxAmount = capitalGain > 0 ? capitalGain * taxRate : 0;
+		
 
 		con
 				.createQuery(sql.updateTradeTax())
@@ -197,16 +225,30 @@ public class TxTradeResult extends TxBase
 
 	private void executeFrame5(final Connection con, final TxOutput txOutput, final TradeResultSession session)
 	{
-		double commAmount = (session.getAsDouble("comm_rate") / 100) * (session.getAsInt("trade_qty") * session.getAsDouble("requested_price"));
+	
+		BigDecimal commAmount = BigDecimal.valueOf(session.getAsDouble("comm_rate"))
+		        .divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
+		        .multiply(BigDecimal.valueOf(session.getAsInt("trade_qty")))
+		        .multiply(BigDecimal.valueOf(session.getAsDouble("requested_price")))
+		        .setScale(2, RoundingMode.HALF_UP);
+		session.put("comm_amount", commAmount.doubleValue());
 
-		con
+		int completed = con
 				.createQuery(sql.updateTrade())
 				.addParameter("comm_amount", commAmount)
 				.addParameter("trade_dts", session.get("trade_dts"))
 				.addParameter("st_completed_id", TradeStatus.COMPLETED.id)
+				.addParameter("st_submitted_id", TradeStatus.SUBMITTED.id)
 				.addParameter("trade_price", session.get("requested_price"))
 				.addParameter("trade_id", session.get("trade_id"))
-				.executeUpdate();
+				.executeUpdate()
+				.getResult();
+
+		if (completed != 1)
+		{
+			throw new IllegalStateException(
+					String.format("Trade %s is no longer in SUBMITTED state", session.get("trade_id")));
+		}
 
 		con
 				.createQuery(sql.insertTradeHistory())
@@ -221,7 +263,7 @@ public class TxTradeResult extends TxBase
 				.addParameter("broker_id", session.get("broker_id"))
 				.executeUpdate();
 
-		session.put("comm_amount", commAmount);
+		session.put("comm_amount", commAmount.doubleValue());
 	}
 
 	private void executeFrame6(final Connection con, final TxOutput txOutput, final TradeResultSession session)
@@ -299,22 +341,21 @@ public class TxTradeResult extends TxBase
 		int hsQty = session.getAsInt("hs_qty");
 		double tradePrice = session.getAsDouble("requested_price");
 		int tradeQty = session.getAsInt("trade_qty");
-		LocalDateTime tradeDts = LocalDateTime.now();
+		LocalDateTime tradeDts = txInputGen.now();
 
 		if (hsQty == 0)
 		{
 			con
-					.createQuery(sql.insertHoldingSummary())
+					.createQuery(sql.upsertHoldingSummarySell())
 					.addParameter("acct_id", session.get("acct_id"))
 					.addParameter("symbol", session.get("symbol"))
-					.addParameter("trade_qty", tradeQty)
+					.addParameter("trade_qty", -tradeQty)
 					.executeUpdate();
 		}
-		else if (hsQty != session.getAsInt("trade_qty"))
+		else if (hsQty != tradeQty)
 		{
 			con
 					.createQuery(sql.updateHoldingSummary())
-					.addParameter("hs_qty", session.get("hs_qty"))
 					.addParameter("acct_id", session.get("acct_id"))
 					.addParameter("symbol", session.get("symbol"))
 					.addParameter("trade_qty", tradeQty)
@@ -422,12 +463,12 @@ public class TxTradeResult extends TxBase
 		int hsQty = session.getAsInt("hs_qty");
 		double tradePrice = session.getAsDouble("requested_price");
 		int tradeQty = session.getAsInt("trade_qty");
-		LocalDateTime tradeDts = LocalDateTime.now();
+		LocalDateTime tradeDts = txInputGen.now();
 
 		if (hsQty == 0)
 		{
 			con
-					.createQuery(sql.insertHoldingSummaryBuy())
+					.createQuery(sql.upsertHoldingSummaryBuy())
 					.addParameter("acct_id", session.get("acct_id"))
 					.addParameter("symbol", session.get("symbol"))
 					.addParameter("trade_qty", tradeQty)
@@ -437,7 +478,6 @@ public class TxTradeResult extends TxBase
 		{
 			con
 					.createQuery(sql.updateHoldingSummaryBuy())
-					.addParameter("hs_qty", session.get("hs_qty"))
 					.addParameter("acct_id", session.get("acct_id"))
 					.addParameter("symbol", session.get("symbol"))
 					.addParameter("trade_qty", tradeQty)
@@ -546,13 +586,13 @@ public class TxTradeResult extends TxBase
 		{
 			// Estimates will be based on closing most recently acquired holdings
 			// Could return 0, 1 or many rows
-			holdingQStmt = sql.getHoldingDesc();
+			holdingQStmt = sql.getHoldingDescForUpdate();
 		}
 		else
 		{
 			// Estimates will be based on closing oldest holdings
 			// Could return 0, 1 or many rows
-			holdingQStmt = sql.getHoldingAsc();
+			holdingQStmt = sql.getHoldingAscForUpdate();
 		}
 
 		return con

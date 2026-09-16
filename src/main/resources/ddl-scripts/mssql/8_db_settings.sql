@@ -13,26 +13,18 @@ GO
 RECONFIGURE;
 GO
 
--- DECLARE @MAX_MEMORY int;
--- SET @MAX_MEMORY = (SELECT physical_memory_kb/1024 FROM sys.dm_os_sys_info);
--- EXEC sp_configure 'max server memory', 2147483647;
--- GO
--- RECONFIGURE;
--- GO
-
-EXEC sp_configure 'max server memory', 30000;
-GO
-RECONFIGURE;
-GO
 
 USE tpce;
 GO
 
 DECLARE @next_tid bigint;
 
-SELECT @next_tid = (MAX(t_id) +1) FROM trade;
+SELECT @next_tid = (MAX(t_id)) FROM trade;
 
 DBCC CHECKIDENT ('dbo.Trade', RESEED, @next_tid); 
+GO
+
+TRUNCATE TABLE runtime_info;
 GO
 
 INSERT INTO runtime_info (days_of_initial_trades, max_initial_t_id, end_of_initial_trades)
@@ -41,8 +33,7 @@ SELECT
 	, MAX(t_id) AS max_initial_t_id
 	, MAX(t_dts) AS end_of_initial_trades
 FROM
-	trade
-WHERE t_dts < '2025-01-01';
+	trade;
 GO
 
 CREATE TYPE dbo.bigint_list_type AS TABLE

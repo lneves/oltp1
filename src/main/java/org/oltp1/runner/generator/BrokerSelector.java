@@ -1,8 +1,9 @@
 package org.oltp1.runner.generator;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.model.Broker;
@@ -32,11 +33,16 @@ public class BrokerSelector
 		}
 	}
 
-	public List<Broker> getList(int size)
+	public Collection<Broker> getList(int size)
 	{
-		List<Broker> list = new ArrayList<Broker>(lstBroker);
-		Collections.shuffle(list);
-		return list.subList(0, Math.min(size, list.size()));
+		Set<Broker> holder = new HashSet<Broker>();
+
+		while (holder.size() < size)
+		{
+			holder.add(ThreadLocalCRandom.get().rndChoice(lstBroker));
+		}
+
+		return holder;
 	}
 
 	public int getBrokerCount()

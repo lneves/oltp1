@@ -44,7 +44,7 @@ public class NewsItemAndXrefTable
 
 		this.hasMoreRecords = customerCount > 0;
 
-		this.newsBaseDate = new DateTime( 2005, 1, 3, 9, 0, 0, 0);
+		this.newsBaseDate = new DateTime(2005, 1, 3, 9, 0, 0, 0);
 		this.newsBaseDate.add(daysOfInitialTrades, 0, true);
 
 		this.itemsGeneratedForCurrentCompany = 0;

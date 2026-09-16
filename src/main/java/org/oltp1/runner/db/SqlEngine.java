@@ -6,18 +6,11 @@ import org.oltp1.common.Assert;
 
 public enum SqlEngine
 {
-	MSSQL, POSTGRESQL, MARIADB, ORACLE, ORIOLEDB;
+	MSSQL, POSTGRESQL, MARIADB, ORIOLEDB;
 
 	public String getBaselineQuery()
 	{
-		if (this == ORACLE)
-		{
-			return "SELECT 0 FROM DUAL;";
-		}
-		else
-		{
-			return "SELECT 0;";
-		}
+		return "SELECT 0;";
 	}
 
 	public String getDefaultConnectDatabase()
@@ -34,10 +27,10 @@ public enum SqlEngine
 		{
 			return "";
 		}
-		else if (this == ORACLE)
-		{
-			return "orcl";
-		}
+		// else if (this == ORACLE)
+		// {
+		// return "orcl";
+		// }
 		else
 		{
 			throw new IllegalArgumentException("Invalid/Unknown database");
@@ -58,10 +51,11 @@ public enum SqlEngine
 		{
 			return "SELECT version();";
 		}
-		else if (this == ORACLE)
-		{
-			return "SELECT LISTAGG(banner, ';') WITHIN GROUP (ORDER BY rownum) AS version FROM v$version;";
-		}
+		// else if (this == ORACLE)
+		// {
+		// return "SELECT LISTAGG(banner, ';') WITHIN GROUP (ORDER BY rownum) AS version
+		// FROM v$version;";
+		// }
 		else
 		{
 			return "SELECT 'Unknown Database engine'";
@@ -169,10 +163,11 @@ public enum SqlEngine
 			return SqlEngine.MARIADB;
 		}
 
-		if (Strings.CS.startsWith(className, "oracle.jdbc.") || Strings.CS.startsWith(jdbcUrl, "jdbc:oracle:"))
-		{
-			return SqlEngine.ORACLE;
-		}
+		// if (Strings.CS.startsWith(className, "oracle.jdbc.") ||
+		// Strings.CS.startsWith(jdbcUrl, "jdbc:oracle:"))
+		// {
+		// return SqlEngine.ORACLE;
+		// }
 
 		throw new IllegalArgumentException("Can't detect the SQL Engine from the JDBC parameters");
 	}
@@ -191,40 +186,52 @@ public enum SqlEngine
 			int pgPort = (port == 0) ? 5432 : port;
 			String pgUri = String
 					.format(
-							"jdbc:postgresql://%s:%s/%s?user=%s&password=%s",
+							"jdbc:postgresql://%s:%s/%s",
 							host,
 							pgPort,
-							database,
-							user,
-							password);
+							database);
 
-			return SqlContext.buildSqlContext(pgUri, "org.postgresql.Driver", maximumPoolSize);
+			return SqlContext
+					.buildSqlContext(
+							pgUri,
+							"org.postgresql.Driver",
+							user,
+							password,
+							maximumPoolSize);
 
 		case MSSQL:
 			int msPort = (port == 0) ? 1433 : port;
 			String msUri = String
 					.format(
-							"jdbc:sqlserver://%s:%s;database=%s;user=%s;password=%s;encrypt=false;trustServerCertificate=true",
+							"jdbc:sqlserver://%s:%s;database=%s;encrypt=false;trustServerCertificate=true",
 							host,
 							msPort,
-							database,
-							user,
-							password);
+							database);
 
-			return SqlContext.buildSqlContext(msUri, "com.microsoft.sqlserver.jdbc.SQLServerDriver", maximumPoolSize);
+			return SqlContext
+					.buildSqlContext(
+							msUri,
+							"com.microsoft.sqlserver.jdbc.SQLServerDriver",
+							user,
+							password,
+							maximumPoolSize);
 
 		case MARIADB:
 			int mariaPort = (port == 0) ? 3306 : port;
 			String mariaUri = String
 					.format(
-							"jdbc:mariadb://%s:%s/%s?user=%s&password=%s",
+							"jdbc:mariadb://%s:%s/%s",
 							host,
 							mariaPort,
-							database,
-							user,
-							password);
+							database);
 
-			return SqlContext.buildSqlContext(mariaUri, "org.mariadb.jdbc.Driver", maximumPoolSize);
+			return SqlContext
+					.buildSqlContext(
+							mariaUri,
+							"org.mariadb.jdbc.Driver",
+							user,
+							password,
+							maximumPoolSize);
 
 		default:
 			throw new IllegalArgumentException(

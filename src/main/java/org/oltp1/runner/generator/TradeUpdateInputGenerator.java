@@ -27,14 +27,18 @@ public class TradeUpdateInputGenerator
 	private static final int TU_A_VALUE_FOR_TIME_GEN_FRAME2 = 4095;
 	private static final int TU_S_VALUE_FOR_TIME_GEN_FRAME2 = 16;
 
-	private static final long TU_TRADE_SHIFT = 200_000_000_000_000L;
+	// BackOffFromEndTime defaults from DriverParamSettings.h (CTradeUpdateSettings)
+	private static final int TU_BACKOFF_SECONDS_FRAME2 = 4 * 8 * 3600; // four 8-hour days
+	private static final int TU_BACKOFF_SECONDS_FRAME3 = 200 * 60;
 
-	private CustomerSelector customerSelector;
-	private CompanySelector companySelector;
+	private final TradeTracker tradeTracker;
+	private final CustomerSelector customerSelector;
+	private final CompanySelector companySelector;
 	private final EnvironementSelector environementSelector;
 
-	public TradeUpdateInputGenerator(CustomerSelector customerSelector, CompanySelector companySelector, EnvironementSelector environementSelector)
+	public TradeUpdateInputGenerator(TradeTracker tradeTracker, CustomerSelector customerSelector, CompanySelector companySelector, EnvironementSelector environementSelector)
 	{
+		this.tradeTracker = tradeTracker;
 		this.customerSelector = customerSelector;
 		this.companySelector = companySelector;
 		this.environementSelector = environementSelector;
@@ -51,7 +55,6 @@ public class TradeUpdateInputGenerator
 		CRandom random = ThreadLocalCRandom.get();
 
 		int threshold = random.rndIntRange(1, 100);
-		long maxOfInitialTradeId = environementSelector.getMaxInitialTradeId() - TU_TRADE_SHIFT;
 		int daysOfinitialTrades = environementSelector.getDaysOfInitialTrades();
 
 		if (threshold <= TU_PERCENT_FRAME_1)
@@ -65,7 +68,8 @@ public class TradeUpdateInputGenerator
 
 			while (tradeIdSet.size() < TU_MAX_ROWS_FRAME_1)
 			{
-				long t = GenUtils.nonUniformTradeId(random, maxOfInitialTradeId, TU_A_VALUE_FRAME_1, TU_S_VALUE_FRAME_1);
+				long maxActiveTradeId = tradeTracker.getInitialMaxTradeId();
+				long t = GenUtils.nonUniformTradeId(random, maxActiveTradeId, TU_A_VALUE_FRAME_1, TU_S_VALUE_FRAME_1);
 				tradeIdSet.add(t);
 			}
 
@@ -83,10 +87,17 @@ public class TradeUpdateInputGenerator
 			input.max_updates = TU_MAX_UPDATES_FRAME_2;
 			input.acct_id = customerSelector.randomAccId();
 
-			LocalDateTime s_dts = GenUtils.nonUniformTradeDts(random, daysOfinitialTrades, TU_A_VALUE_FOR_TIME_GEN_FRAME2, TU_S_VALUE_FOR_TIME_GEN_FRAME2);
+			LocalDateTime s_dts = GenUtils
+					.nonUniformTradeDts(
+							random,
+							daysOfinitialTrades,
+							TU_BACKOFF_SECONDS_FRAME2,
+							TU_A_VALUE_FOR_TIME_GEN_FRAME2,
+							TU_S_VALUE_FOR_TIME_GEN_FRAME2);
 
 			input.start_trade_dts = s_dts;
-			input.end_trade_dts = environementSelector.getEndOfInitialTrades();
+			// Reference: the interval ends at the end of the initial trade period.
+			input.end_trade_dts = GenUtils.endOfInitialTrades(daysOfinitialTrades);
 		}
 		else
 		{
@@ -97,10 +108,17 @@ public class TradeUpdateInputGenerator
 
 			input.symbol = companySelector.randomCompany().getSymbol();
 
-			LocalDateTime s_dts = GenUtils.nonUniformTradeDts(random, daysOfinitialTrades, TU_A_VALUE_FOR_TIME_GEN_FRAME2, TU_S_VALUE_FOR_TIME_GEN_FRAME2);
+			LocalDateTime s_dts = GenUtils
+					.nonUniformTradeDts(
+							random,
+							daysOfinitialTrades,
+							TU_BACKOFF_SECONDS_FRAME3,
+							TU_A_VALUE_FOR_TIME_GEN_FRAME2,
+							TU_S_VALUE_FOR_TIME_GEN_FRAME2);
 
 			input.start_trade_dts = s_dts;
-			input.end_trade_dts = environementSelector.getEndOfInitialTrades();
+			// Reference: the interval ends at the end of the initial trade period.
+			input.end_trade_dts = GenUtils.endOfInitialTrades(daysOfinitialTrades);
 
 			input.max_acct_id = customerSelector.getMaxAccId();
 		}

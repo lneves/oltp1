@@ -151,56 +151,6 @@ public class MEESecurity
 		return this.rangeHigh;
 	}
 
-	/**
-	 * Calculates the submission time for limit orders.
-	 *
-	 * @param securityIndex
-	 *            Unique index for the security.
-	 * @param pendingTime
-	 *            Time the order was placed, in seconds from time 0.
-	 * @param limitPrice
-	 *            The limit price of the order.
-	 * @param tradeType
-	 *            The type of trade (Limit Buy, Limit Sell, Stop Loss).
-	 * @return The expected submission time in seconds.
-	 */
-	public double __getSubmissionTime(long securityIndex, double pendingTime, Money limitPrice, TradeType tradeType)
-	{
-		Money priceAtPendingTime = calculatePrice(securityIndex, pendingTime);
-		double submissionTimeFromPending;
-
-		// Check if the order is already in-the-money.
-		boolean isInTheMoney = ((tradeType == TradeType.LIMIT_BUY || tradeType == TradeType.STOP_LOSS) && priceAtPendingTime.compareTo(limitPrice) <= 0) ||
-				((tradeType == TradeType.LIMIT_SELL) && priceAtPendingTime.compareTo(limitPrice) >= 0);
-
-		if (isInTheMoney)
-		{
-			// Order triggers immediately, with a small random delay.
-			double low = 0.5 * this.meanInTheMoneySubmissionDelay;
-			double high = 1.5 * this.meanInTheMoneySubmissionDelay;
-			submissionTimeFromPending = low + (rnd.rndDouble() * (high - low));
-		}
-		else
-		{
-			// Order is not in-the-money, calculate time until price is reached.
-			int directionAtPendingTime;
-			if ((int) (pendingTime + initialTime(securityIndex)) % this.period < this.period / 2)
-			{
-				directionAtPendingTime = 1; // Price is going up
-			}
-			else
-			{
-				directionAtPendingTime = -1; // Price is going down
-			}
-			submissionTimeFromPending = calculateTime(priceAtPendingTime, limitPrice, directionAtPendingTime);
-		}
-
-		return BigDecimal
-				.valueOf(pendingTime + submissionTimeFromPending)
-				.setScale(3, RoundingMode.HALF_UP)
-				.doubleValue();
-	}
-
 	public double getSubmissionTime(long securityIndex, double pendingTime, Money limitPrice, TradeType tradeType)
 	{
 		Money priceAtPendingTime = calculatePrice(securityIndex, pendingTime);

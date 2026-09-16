@@ -2,6 +2,8 @@ package org.oltp1.runner;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.oltp1.common.CaseInsensitiveEnumConverter;
@@ -9,27 +11,18 @@ import org.oltp1.common.ErrorAnalyser;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.db.SqlEngine;
 import org.oltp1.runner.generator.TxInputGenerator;
-import org.oltp1.runner.perf.ConsoleReportWriter;
-import org.oltp1.runner.perf.JsonReportWriter;
-import org.oltp1.runner.perf.MixParameters;
-import org.oltp1.runner.perf.MixRunner;
-import org.oltp1.runner.perf.PeriodicTx;
-import org.oltp1.runner.perf.ThreadPoolBuilder;
-import org.oltp1.runner.perf.TxBaseLine;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxRunSummary;
-import org.oltp1.runner.perf.TxStatsCollector;
-import org.oltp1.runner.perf.TxVoid;
-import org.oltp1.runner.tx.broker_volume.TxBrokerVolume;
-import org.oltp1.runner.tx.customer_position.TxCustomerPosition;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.ConsoleReportWriter;
+import org.oltp1.runner.runtime.ExchangeEmulator;
+import org.oltp1.runner.runtime.JsonReportWriter;
+import org.oltp1.runner.runtime.MarketExchangeEmulator;
+import org.oltp1.runner.runtime.NoOpExchangeEmulator;
+import org.oltp1.runner.runtime.Pacer;
+import org.oltp1.runner.runtime.ProgressMonitor;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.WorkLoadClient;
 import org.oltp1.runner.tx.data_maintenance.TxDataMaintenance;
-import org.oltp1.runner.tx.market_watch.TxMarketWatch;
-import org.oltp1.runner.tx.security_detail.TxSecurityDetail;
 import org.oltp1.runner.tx.trade_cleanup.TxTradeCleanup;
-import org.oltp1.runner.tx.trade_lookup.TxTradeLookup;
-import org.oltp1.runner.tx.trade_order.TxTradeOrder;
-import org.oltp1.runner.tx.trade_status.TxTradeStatus;
-import org.oltp1.runner.tx.trade_update.TxTradeUpdate;
 import org.slf4j.LoggerFactory;
 import org.sql2o.Connection;
 import org.sql2o.Query;
@@ -38,10 +31,13 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "driver", mixinStandardHelpOptions = true, description = "Runs OLTP1, a TPC-E inspired, benchmark against a Database server")
+@Command(name = "driver", mixinStandardHelpOptions = false, description = "Runs OLTP1, a TPC-E inspired, benchmark against a Database server")
 public class Oltp1Driver implements Callable<Integer>
 {
 	private static final org.slf4j.Logger log = LoggerFactory.getLogger(Oltp1Driver.class);
+
+	@Option(names = { "--help" }, usageHelp = true, description = "Show this help message and exit")
+	public boolean helpRequested;
 
 	@Option(names = { "-h", "--host" }, description = "Database host", required = true)
 	public String host;
@@ -58,7 +54,7 @@ public class Oltp1Driver implements Callable<Integer>
 	@Option(names = { "-e", "--engine" }, description = "Database Engine under test, valid values: ${COMPLETION-CANDIDATES}", required = true)
 	public SqlEngine engine;
 
-	@Option(names = { "-d", "--duration" }, description = "Duration of the test run in seconds. [${DEFAULT-VALUE}]")
+	@Option(names = { "-d", "--duration" }, description = "Total run duration in seconds, including warm-up. The first 15% is warm-up (clamped to 180-600s) and is excluded from the measured results. [${DEFAULT-VALUE}]")
 	public int duration = 360;
 
 	@Option(names = { "-c", "--clients" }, description = "Number of simulated clients/users. [${DEFAULT-VALUE}]")
@@ -67,7 +63,7 @@ public class Oltp1Driver implements Callable<Integer>
 	@Option(names = { "-b", "--baseline" }, description = "Only execute a baseline query during the run")
 	public boolean isBaselineRun = false;
 
-	@Option(names = { "-w", "--wait-time" }, description = "Enable pacing to control the transaction rate")
+	@Option(names = { "-w", "--pacing" }, description = "Enable pacing to control the transaction rate")
 	public boolean isPacingEnabled = false;
 
 	@Option(names = { "--tps" }, description = "Target transactions per second for pacing. [${DEFAULT-VALUE}]")
@@ -79,104 +75,75 @@ public class Oltp1Driver implements Callable<Integer>
 	@Option(names = { "-q", "--quiet" }, description = "Disable logging of transaction errors and warnings")
 	public boolean hideAlerts = false;
 
+	@Option(names = { "--skip-permission-validation" }, description = "Warn instead of aborting at startup when ACCOUNT_PERMISSION owner coverage is inconsistent")
+	public boolean skipPermissionValidation = false;
+
 	@Override
 	public Integer call() throws Exception
 	{
 		try
 		{
+			validate();
+
+			TxBase.setQuiet(hideAlerts);
+
 			int asyncMeePoolSize = calculateMeePoolSize(clients);
 			int maximumConnPoolSize = clients + asyncMeePoolSize + 2;
 
-			SqlContext sqlCtx = engine.createSqlContext(host, port, "tpce", user, password, maximumConnPoolSize);
-
-			final String dbInfo = getDbInfo(sqlCtx);
-
-			MixParameters mparams = new MixParameters(dbInfo, clients, isPacingEnabled, tps);
-			MixRunner txMixRunner = new MixRunner(mparams);
-
-			final long totalDurationSec = duration;
-
-			if (isBaselineRun)
+			try (SqlContext sqlCtx = engine.createSqlContext(host, port, "tpce", user, password, maximumConnPoolSize))
 			{
-				txMixRunner.addTx(new TxBaseLine(sqlCtx), 1.0);
-				log.info("Running 'baseline' benchmark");
-				txMixRunner.runTxMix(totalDurationSec);
-			}
-			else
-			{
-				final TxInputGenerator txInputGen = new TxInputGenerator(sqlCtx);
-				final ExecutorService mee = ThreadPoolBuilder.newThreadPool(asyncMeePoolSize, "run-async");
+				final String dbInfo = getDbInfo(sqlCtx);
 
-				// # Read-Only Transactions
-				// Broker Volume Mid-Heavy R/O 4.9%
-				// Customer Position Mid-Heavy R/O 13%
-				// Market Watch Medium R/O 18%
-				// Security Detail Medium R/O 14%
-				// Trade-Lookup Medium R/O 8%
-				// Trade-Status Light R/O 19%
-				//
-				// # Read-Write Transactions
-				// Data Maintenance Light R/W - 1 per minute
-				// Trade-Cleanup Medium R/W - once at start
-				//
-				// Market Feed Medium R/W 1%
-				// Trade-Order Heavy R/W 10.1%
-				// Trade-Result Heavy R/W 10%
-				// Trade-Update Medium R/W 2%
+				log
+						.info(
+								"Initialized Db Connection pool for engine {} at {}:{} (maxPoolSize={})",
+								dbInfo,
+								host,
+								port,
+								maximumConnPoolSize);
 
-				log.info("Execute 'Trade-Cleanup' before test run");
+				final Pacer pacer = new Pacer(isPacingEnabled, tps);
 
-				TxTradeCleanup tradeCleanup = new TxTradeCleanup(txInputGen, sqlCtx);
+				final long totalDurationSec = duration;
+				final long warmupDurationSec = calculateWarmupTime(totalDurationSec);
+				final long measureDurationSec = Math.max(totalDurationSec - warmupDurationSec, 5);
 
-				TxOutput clnOut = tradeCleanup.execute();
+				log
+						.info(
+								"Warm-up duration: {} s, measurement duration: {} s",
+								warmupDurationSec,
+								measureDurationSec);
 
-				log.info("'Trade-Cleanup' finished: {}", clnOut.toString());
+				final TxInputGenerator txInputGen = new TxInputGenerator(sqlCtx, !skipPermissionValidation);
 
-				txMixRunner.addPeriodic(new PeriodicTx(new TxDataMaintenance(txInputGen, sqlCtx), 0, 60, TimeUnit.SECONDS));
-				txMixRunner.addTx(new TxBrokerVolume(txInputGen, sqlCtx), 0.049);
-				txMixRunner.addTx(new TxCustomerPosition(txInputGen, sqlCtx), 0.13);
-				txMixRunner.addTx(new TxMarketWatch(txInputGen, sqlCtx), 0.18);
-				txMixRunner.addTx(new TxSecurityDetail(txInputGen, sqlCtx), 0.14);
-				txMixRunner.addTx(new TxTradeLookup(txInputGen, sqlCtx), 0.08);
-				txMixRunner.addTx(new TxTradeStatus(txInputGen, sqlCtx), 0.19);
-
-				TxStatsCollector tradeResultStats = new TxStatsCollector("Trade-Result");
-				TxStatsCollector mktFeedStats = new TxStatsCollector("Market-Feed");
-
-				txMixRunner.addTx(new TxTradeOrder(txInputGen, sqlCtx, tradeResultStats, mktFeedStats, mee), 0.101);
-				txMixRunner.addTx(new TxVoid(tradeResultStats), 0.1); // placeholder for TradeResult
-				txMixRunner.addTx(new TxVoid(mktFeedStats), 0.01); // placeholder for MarketFeed
-
-				txMixRunner.addTx(new TxTradeUpdate(txInputGen, sqlCtx), 0.02);
-
-				long warmupDurationSec = calculateWarmupTime(totalDurationSec);
-
-				// Ensure the measurement phase is at least 5 second to avoid errors.
-				long measureDurationSec = Math.max(totalDurationSec - warmupDurationSec, 5);
-
-				log.info("Total Run: {}s (Warmup: {}s, Measure: {}s)", totalDurationSec, warmupDurationSec, measureDurationSec);
+				if (!isBaselineRun)
+				{
+					final TxTradeCleanup cu = new TxTradeCleanup(txInputGen, sqlCtx);
+					cu.execute();
+				}
 
 				log.info("Starting warmup run");
-				txMixRunner.runTxMix(warmupDurationSec);
+				runTasks(sqlCtx, txInputGen, pacer, warmupDurationSec);
 
 				log.info("Starting measurement run");
-				txMixRunner.runTxMix(measureDurationSec);
+				BenchmarkMetrics metrics = runTasks(sqlCtx, txInputGen, pacer, measureDurationSec);
 
-				closeAsyncExec(mee);
+				if (enableJsonOutput)
+				{
+					JsonReportWriter jsonWriter = new JsonReportWriter(dbInfo);
+					jsonWriter.accept(dbInfo, metrics);
+					log.info("JSON report written to: {}", jsonWriter.getOutputPath());
+				}
+
+				(new ConsoleReportWriter()).accept(dbInfo, metrics);
+
+				return 0;
 			}
-
-			TxRunSummary runSummary = txMixRunner.buildSummary();
-
-			if (enableJsonOutput)
+			catch (Throwable t)
 			{
-				JsonReportWriter jsonWriter = new JsonReportWriter(sqlCtx.getSqlEngine());
-				jsonWriter.accept(runSummary);
-				log.info("JSON report written to: {}", jsonWriter.getOutputPath());
+				throw new RuntimeException(t);
 			}
 
-			(new ConsoleReportWriter()).accept(runSummary);
-
-			return 0;
 		}
 		catch (Throwable t)
 		{
@@ -186,7 +153,94 @@ public class Oltp1Driver implements Callable<Integer>
 		}
 	}
 
-	private long calculateWarmupTime(final long totalDurationSec)
+	private BenchmarkMetrics runTasks(SqlContext sqlCtx, TxInputGenerator txInputGen, final Pacer pacer, final long durationSec) throws Exception
+	{
+		BenchmarkMetrics metrics = new BenchmarkMetrics(clients);
+
+		int asyncMeePoolSize = calculateMeePoolSize(clients);
+
+		try (
+				final ExchangeEmulator mee = isBaselineRun ? new NoOpExchangeEmulator() : new MarketExchangeEmulator(sqlCtx, txInputGen, asyncMeePoolSize, metrics);
+				final ProgressMonitor progressMonitor = new ProgressMonitor(metrics, durationSec);)
+		{
+
+			final ExecutorService executor = Executors
+					.newFixedThreadPool(
+							clients,
+							Thread.ofPlatform().name("client-", 0).factory());
+
+			final ScheduledExecutorService dmExec = Executors.newSingleThreadScheduledExecutor();
+
+			metrics.markStart();
+
+			if (!isBaselineRun)
+			{
+				final TxDataMaintenance dm = new TxDataMaintenance(txInputGen, sqlCtx, metrics);
+				dmExec.scheduleAtFixedRate(dm::execute, 0, 60, TimeUnit.SECONDS);
+			}
+
+			progressMonitor.start();
+
+			for (int i = 0; i < clients; i++)
+			{
+				final WorkLoadClient wclient = new WorkLoadClient(sqlCtx, txInputGen, metrics, mee, isBaselineRun);
+
+				executor.submit(() -> wclient.runTxMix(durationSec, TimeUnit.SECONDS, pacer));
+			}
+
+			// Wait for all the benchmark tasks to finish
+			executor.shutdown();
+
+			if (!executor.awaitTermination(2 * durationSec, TimeUnit.SECONDS))
+			{
+				executor.shutdownNow();
+				log.error("Foreground clients did not terminate");
+			}
+
+			dmExec.shutdown();
+			if (!dmExec.awaitTermination(2 * durationSec, TimeUnit.SECONDS))
+			{
+				dmExec.shutdownNow();
+				log.error("Asynchronous clients did not terminate");
+			}
+			
+			mee.stopAccepting();
+			long remaining = mee.drain();
+			metrics.markEnd();
+			progressMonitor.setDraining(true); 
+
+			if (remaining > 0)
+			{
+				log.warn("MEE did not drain: {}", remaining);
+			}
+		}
+		return metrics;
+	}
+
+	void validate()
+	{
+		if (clients < 1)
+		{
+			throw new IllegalArgumentException("--clients must be >= 1");
+		}
+
+		if (duration < 1)
+		{
+			throw new IllegalArgumentException("--duration must be >= 1");
+		}
+
+		if (port < 0 || port > 65535)
+		{
+			throw new IllegalArgumentException("--port must be between 0 and 65535");
+		}
+
+		if (isPacingEnabled && tps < 1)
+		{
+			throw new IllegalArgumentException("--tps must be >= 1 when --pacing is enabled");
+		}
+	}
+
+	long calculateWarmupTime(final long totalDurationSec)
 	{
 		long warmupDurationSec;
 
@@ -214,37 +268,12 @@ public class Oltp1Driver implements Callable<Integer>
 	private int calculateMeePoolSize(final int clients)
 	{
 		final double tradeOrderPct = 0.101; // The transaction's mix percentage
-		final double scalingFactor = 0.5; // A factor for short-lived tasks
-
 		// The calculation numberOfClients * 0.101 gives rough estimate of the
-		// peak number of Trade-Order transactions that might be completing
-		// concurrently.
-		// The scalingFactor = 0.5 reduces this number. It's a heuristic that
-		// essentially says, "I only need a pool of threads half the size of the
-		// theoretical peak because the tasks are so fast that a backlog is unlikely to
-		// build up."
-		// Calculate the pool size using the heuristic
-		int asyncPoolSize = (int) Math.ceil(clients * tradeOrderPct * scalingFactor);
+		int asyncPoolSize = (int) Math.ceil(clients * tradeOrderPct);
 
 		asyncPoolSize = Math.max(2, asyncPoolSize); // Ensure a minimum of 2 threads
-		return asyncPoolSize;
-	}
-
-	private void closeAsyncExec(final ExecutorService asyncExecutor)
-	{
-		asyncExecutor.shutdown();
-		try
-		{
-			if (!asyncExecutor.awaitTermination(5, TimeUnit.SECONDS))
-			{
-				asyncExecutor.shutdownNow();
-			}
-		}
-		catch (InterruptedException e)
-		{
-			asyncExecutor.shutdownNow();
-			Thread.currentThread().interrupt();
-		}
+	
+		return 6;
 	}
 
 	private String getDbInfo(SqlContext sqlCtx)
@@ -270,9 +299,3 @@ public class Oltp1Driver implements Callable<Integer>
 		System.exit(exitCode);
 	}
 }
-// Transaction Frame Reason for Warning
-// Trade-Lookup 2 +621 num_found == 0
-// Trade-Lookup 3 +631 num_found == 0
-// Trade-Lookup 4 +641 num_trades_found == 0
-// Trade-Update 2 +1021 num_updated == 0
-// Trade-Update 3 +1031 num_found == 0

@@ -43,7 +43,8 @@ public class DateTime
 	private static final int msPerDay = secondsPerDay * msPerSecond;
 	// private static final double msPerSecondDivisor = 1000.000;
 	// private static final int hoursPerWorkDay = 8;
-	// private static final int secondsPerWorkDay = secondsPerMinute * minutesPerHour * hoursPerWorkDay;
+	// private static final int secondsPerWorkDay = secondsPerMinute *
+	// minutesPerHour * hoursPerWorkDay;
 	// private static final int secondsPerHour = secondsPerMinute * minutesPerHour;
 	// private static final int msPerWorkDay = secondsPerWorkDay * msPerSecond;
 

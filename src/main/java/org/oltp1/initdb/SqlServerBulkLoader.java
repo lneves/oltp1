@@ -51,15 +51,15 @@ public class SqlServerBulkLoader extends BulkLoader
 					options.setTableLock(true);
 					options.setBulkCopyTimeout(0); // No timeout
 
-					try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(jdbcConn))
+					try (
+							SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(jdbcConn);
+							PipeDelimitedFileReader dataReader = new PipeDelimitedFileReader(dataFile);)
 					{
 						bulkCopy.setBulkCopyOptions(options);
 						bulkCopy.setDestinationTableName(tableName);
 
-						// Create a custom data reader for pipe-delimited files
-						PipeDelimitedFileReader dataReader = new PipeDelimitedFileReader(dataFile);
 						bulkCopy.writeToServer(dataReader);
-						
+
 						log.info("Successfully loaded data into table: {}", tableName);
 					}
 				}

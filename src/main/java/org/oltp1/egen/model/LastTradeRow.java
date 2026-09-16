@@ -1,5 +1,6 @@
 package org.oltp1.egen.model;
 
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.util.DateTime;
@@ -18,8 +19,8 @@ public class LastTradeRow
 		return new StringJoiner("|")
 				.add(LT_S_SYMB)
 				.add(LT_DTS.toFormattedString(12)) // YYYY-MM-DD HH:mm:ss.SSS
-				.add(String.format("%.2f", LT_PRICE))
-				.add(String.format("%.2f", LT_OPEN_PRICE))
+				.add(String.format(Locale.ROOT, "%.2f", LT_PRICE))
+				.add(String.format(Locale.ROOT, "%.2f", LT_OPEN_PRICE))
 				.add(String.valueOf(LT_VOL))
 				.toString();
 	}

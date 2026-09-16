@@ -18,7 +18,6 @@ public class CustomerPositionInputGenerator
 
 	public TxCustomerPositionInput generateCustomerPositionInput()
 	{
-		TxCustomerPositionInput txInput = new TxCustomerPositionInput();
 
 		CRandom random = ThreadLocalCRandom.get();
 
@@ -28,34 +27,31 @@ public class CustomerPositionInputGenerator
 		// 1 50% 48% to 52%
 
 		// Select a non-uniform random customer and their tier.
+
 		RandomCustomer customer = customerSelector.randomCustomer();
-		long customerId = customer.cId;
+		long custId = customer.cId;
+		int acctIdIdx = -1;
+		String taxId = null;
 
 		// Decide whether to identify the customer by tax_id or cust_id.
 		if (random.rndPercent(CP_PERCENT_BY_TAX_ID))
 		{
 			// Use tax_id for the lookup.
-			txInput.tax_id = customerSelector.getTaxId(customerId);
-		}
-		else
-		{
-			// Use cust_id for the lookup.
-			txInput.cust_id = customerId;
+			taxId = customerSelector.getTaxId(custId);
+			custId = -1;
 		}
 
 		// Decide whether to request the account history.
-		txInput.get_history = random.rndPercent(CP_PERCENT_GET_HISTORY);
+		boolean getHistory = random.rndPercent(CP_PERCENT_GET_HISTORY);
 
 		// If getting history, select a random account index for that customer.
-		if (txInput.get_history)
+		if (getHistory)
 		{
 			int numAccounts = customerSelector.getNumberOfAccounts(customer);
-			txInput.acct_id_idx = random.rndIntRange(0, numAccounts - 1);
+			acctIdIdx = random.rndIntRange(0, numAccounts - 1);
 		}
-		else
-		{
-			txInput.acct_id_idx = -1; // Not used
-		}
+
+		TxCustomerPositionInput txInput = new TxCustomerPositionInput(acctIdIdx, custId, getHistory, taxId);
 
 		return txInput;
 	}

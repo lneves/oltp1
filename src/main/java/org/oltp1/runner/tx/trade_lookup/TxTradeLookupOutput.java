@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.oltp1.runner.perf.TxOutput;
+import org.oltp1.runner.runtime.TxOutput;
 
 public class TxTradeLookupOutput extends TxOutput
 {
@@ -15,7 +15,9 @@ public class TxTradeLookupOutput extends TxOutput
 	public List<Map<String, Object>> lst_trades_frm4;
 	public List<Map<String, Object>> lst_trades_history;
 	public int frame_executed;
-	public int num_found;
+	public int num_found; // Number of HOLDING_HISTORY rows returned (may be zero).
+	public int num_trades_found;
+	public Long trade_id;
 
 	public TxTradeLookupOutput()
 	{
@@ -38,6 +40,8 @@ public class TxTradeLookupOutput extends TxOutput
 				.append("lst_trades_frm4", lst_trades_frm4)
 				.append("lst_trades_history", lst_trades_history)
 				.append("num_found", num_found)
+				.append("num_trades_found", num_trades_found)
+				.append("trade_id", trade_id)
 				.append("tx_status", getStatus())
 				.append("tx_status_message", getStatusMessage())
 				.toString();

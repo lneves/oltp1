@@ -17,12 +17,12 @@ public class JdbcQuery
 	public void executeQuery(String query, int fetchSize, ResultSetRowHandler rowHandler)
 	{
 		java.sql.Connection jdbcConn = null;
-		boolean initialAutocommit = true;
 
 		try (Connection sql2oConn = sqlCtx.getSql2o().open())
 		{
 			jdbcConn = sql2oConn.getJdbcConnection();
-			
+			boolean initialAutocommit = true;
+
 			try (java.sql.Statement stmt = jdbcConn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY))
 			{
 				initialAutocommit = jdbcConn.getAutoCommit();
@@ -35,22 +35,12 @@ public class JdbcQuery
 						rowHandler.handle(r);
 				}
 			}
+
+			jdbcConn.setAutoCommit(initialAutocommit);
 		}
 		catch (SQLException e)
 		{
 			throw new RuntimeException(e);
-		}
-		finally
-		{
-			if (jdbcConn != null)
-				try
-				{
-					jdbcConn.setAutoCommit(initialAutocommit);
-				}
-				catch (SQLException ignored)
-				{
-					/* ignore */
-				}
 		}
 	}
 }

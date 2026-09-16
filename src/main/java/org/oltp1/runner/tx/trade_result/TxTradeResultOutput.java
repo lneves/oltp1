@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.oltp1.runner.perf.TxOutput;
+import org.oltp1.runner.runtime.TxOutput;
 
 public class TxTradeResultOutput extends TxOutput
 {

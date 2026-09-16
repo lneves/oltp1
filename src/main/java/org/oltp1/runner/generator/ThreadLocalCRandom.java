@@ -11,6 +11,8 @@ public final class ThreadLocalCRandom
 	// A base seed to start the sequence for all threads.
 	// This is the default Txn Input Generator seed from RNGSeeds.h
 	private static final long BASE_SEED = 80534927L;
+	private static final CRandom BASE = new CRandom(BASE_SEED);
+	private static final long THREAD_STRIDE = 10_000_000L; // >> draws per client lifetime
 
 	// An AtomicLong to safely dispense a unique seed to each new thread.
 	private static final AtomicLong seedDispenser = new AtomicLong(BASE_SEED);
@@ -24,7 +26,7 @@ public final class ThreadLocalCRandom
 			// Get a unique seed for this thread and create a new CRandom instance.
 			// getAndIncrement() is an atomic operation, ensuring no two threads get the
 			// same seed.
-			return new CRandom(seedDispenser.getAndIncrement());
+			return new CRandom(BASE.rndNthElement(BASE_SEED, 1 + seedDispenser.getAndIncrement() * THREAD_STRIDE));
 		}
 	};
 
@@ -36,5 +38,10 @@ public final class ThreadLocalCRandom
 	public static CRandom get()
 	{
 		return threadLocalRandom.get();
+	}
+
+	protected static void set(CRandom val)
+	{
+		threadLocalRandom.set(val);
 	}
 }

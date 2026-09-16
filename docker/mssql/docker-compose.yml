@@ -4,7 +4,7 @@ services:
     container_name: ${MSSQL_CONTAINER_NAME:-mssql_oltp1}
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=${MSSQL_ADMIN_PASSWORD}
+      - MSSQL_SA_PASSWORD=${MSSQL_ADMIN_PASSWORD}
       - MSSQL_DATA_DIR=/var/opt/mssql/data
       - MSSQL_LOG_DIR=/var/opt/mssql/logs
     ports:

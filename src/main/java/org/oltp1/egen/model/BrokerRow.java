@@ -1,6 +1,7 @@
 package org.oltp1.egen.model;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.io.AppendableRow;
@@ -21,7 +22,7 @@ public class BrokerRow implements AppendableRow
 				.add(B_ST_ID)
 				.add(B_NAME)
 				.add(String.valueOf(B_NUM_TRADES))
-				.add(String.format("%.2f", B_COMM_TOTAL))
+				.add(String.format(Locale.ROOT, "%.2f", B_COMM_TOTAL))
 				.toString();
 	}
 

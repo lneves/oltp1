@@ -1,6 +1,5 @@
 package org.oltp1.runner.generator;
 
-import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.Month;
 
@@ -51,22 +50,34 @@ public class GenUtils
 
 	/**
 	 * Generates a non-uniform random date within the initial trade period. Based on
-	 * the logic in CCETxnInputGenerator::GenerateNonUniformTradeDTS.
+	 * the logic in CCETxnInputGenerator::GenerateNonUniformTradeDTS. The reference
+	 * caps the upper bound with the frame's BackOffFromEndTime value (for example
+	 * four 8-hour days for Trade-Lookup/Trade-Update frame 2) so the generated
+	 * window never reaches the very end of the initial trade history.
 	 *
 	 * @param random
 	 *            The compliant random number generator.
+	 * @param daysOfInitialTrades
+	 *            The number of 8-hour workdays of initial trade history.
+	 * @param backOffSeconds
+	 *            Seconds subtracted from the end of the initial trade period before
+	 *            choosing the start time (0 for no back-off).
 	 * @param aValue
 	 *            The 'A' parameter for the NURand function, controlling skew.
 	 * @param sValue
 	 *            The 's' (shift) parameter for the NURand function.
 	 * @return A randomly generated LocalDateTime.
 	 */
-	public static LocalDateTime nonUniformTradeDts(CRandom random, int daysOfInitialTrades, int aValue, int sValue)
+	public static LocalDateTime nonUniformTradeDts(CRandom random, int daysOfInitialTrades, int backOffSeconds, int aValue, int sValue)
 	{
+		long initialTradeSeconds = (long) daysOfInitialTrades * HOURS_PER_WORKDAY * SECONDS_PER_HOUR;
 
-		long totalInitialTradeMs = (long) daysOfInitialTrades * HOURS_PER_WORKDAY * SECONDS_PER_HOUR * MS_PER_SECOND;
+		// Compliant runs use 300 workdays, far longer than the reference back-offs.
+		// Clamp for short, non-compliant datasets so the generated range stays valid.
+		long maxOffsetSeconds = Math.max(1, initialTradeSeconds - backOffSeconds);
+
 		// Generate a non-uniform random offset in milliseconds from the start time.
-		long tradeTimeOffsetMs = random.nonUniformRandom(1, totalInitialTradeMs, aValue, sValue);
+		long tradeTimeOffsetMs = random.nonUniformRandom(1, maxOffsetSeconds * MS_PER_SECOND, aValue, sValue);
 
 		// Add the generated work-time milliseconds to the base date.
 		return addWorkMs(TRADE_POPULATION_BASE_DATE, tradeTimeOffsetMs);
@@ -92,9 +103,10 @@ public class GenUtils
 		return addWorkMs(TRADE_POPULATION_BASE_DATE, totalWorkMs);
 	}
 
+	//
 	/**
 	 * Adds a specified number of "work" milliseconds to a base date, simulating an
-	 * 8-hour workday and skipping weekends. Based on CDateTime::AddWorkMs.
+	 * 8-hour workday and skipping weekends. Based on CDateTime::AddWorkMs. //
 	 */
 	private static LocalDateTime addWorkMs(LocalDateTime startDate, long workMs)
 	{
@@ -103,27 +115,42 @@ public class GenUtils
 		long workDays = workMs / msPerWorkDay;
 		long remainingMsInDay = workMs % msPerWorkDay;
 
-		LocalDateTime resultDate = startDate;
-		long daysAdded = 0;
-
-		// Add full work weeks first for efficiency
+		// Convert complete work weeks directly to calendar days.
 		long workWeeks = workDays / 5;
-		resultDate = resultDate.plusWeeks(workWeeks);
-		daysAdded += workWeeks * 5;
+		int remainingWorkDays = (int) (workDays % 5);
 
-		// Add the remaining days one by one, skipping weekends
-		while (daysAdded < workDays)
+		long calendarDays = workWeeks * 7;
+
+		if (remainingWorkDays > 0)
 		{
-			resultDate = resultDate.plusDays(1);
-			if (resultDate.getDayOfWeek() != DayOfWeek.SATURDAY && resultDate.getDayOfWeek() != DayOfWeek.SUNDAY)
+			int dayOfWeek = startDate.getDayOfWeek().getValue();
+			// Monday = 1, ..., Friday = 5, Saturday = 6, Sunday = 7
+
+			if (dayOfWeek == 6)
 			{
-				daysAdded++;
+				// Starting Saturday: skip Sunday.
+				calendarDays += remainingWorkDays + 1;
+			}
+			else if (dayOfWeek == 7)
+			{
+				// Starting Sunday: next day is Monday.
+				calendarDays += remainingWorkDays;
+			}
+			else
+			{
+				calendarDays += remainingWorkDays;
+
+				// If the remaining workdays cross a weekend, add Sat + Sun.
+				if (dayOfWeek + remainingWorkDays > 5)
+				{
+					calendarDays += 2;
+				}
 			}
 		}
 
-		// Add the remaining milliseconds for the final day
-		resultDate = resultDate.plusNanos(remainingMsInDay * 1_000_000);
-
-		return resultDate;
+		return startDate
+				.plusDays(calendarDays)
+				.plusNanos(remainingMsInDay * 1_000_000);
 	}
+
 }

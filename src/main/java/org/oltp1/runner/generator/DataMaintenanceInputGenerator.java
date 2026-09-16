@@ -1,7 +1,5 @@
 package org.oltp1.runner.generator;
 
-import java.util.Arrays;
-
 import org.oltp1.runner.tx.data_maintenance.TxDataMaintenanceInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +18,15 @@ public class DataMaintenanceInputGenerator
 
 	private CustomerSelector customerSelector;
 
-	private CompanySelector companySelector;; // Internal counter to cycle through tables.
+	private CompanySelector companySelector;
 
-	public DataMaintenanceInputGenerator(CustomerSelector customerSelector, CompanySelector companySelector)
+	private TaxRateSelector taxRateSelector;; // Internal counter to cycle through tables.
+
+	public DataMaintenanceInputGenerator(CustomerSelector customerSelector, CompanySelector companySelector, TaxRateSelector taxRateSelector)
 	{
 		this.customerSelector = customerSelector;
 		this.companySelector = companySelector;
+		this.taxRateSelector = taxRateSelector;
 	}
 
 	public TxDataMaintenanceInput generateDataMaintenanceInput()
@@ -56,7 +57,7 @@ public class DataMaintenanceInputGenerator
 				}
 				break;
 			case "COMPANY":
-				input.symbol = companySelector.randomCompany().getSymbol();
+				input.co_id = companySelector.randomCompany().getCoId();
 				break;
 			case "CUSTOMER":
 				input.c_id = customerSelector.randomCustomer().cId;
@@ -67,22 +68,22 @@ public class DataMaintenanceInputGenerator
 			case "DAILY_MARKET":
 				input.symbol = companySelector.randomCompany().getSymbol();
 				input.day_of_month = crand.rndIntRange(1, 31);
-				input.vol_incr = crand.rndChoice(Arrays.asList(-2, -1, 1, 2));
+				input.vol_incr = randomDailyMarketVolumeIncrement(crand);
 				break;
 			case "EXCHANGE":
 				// No input needed
 				break;
 			case "FINANCIAL":
-				input.symbol = companySelector.randomCompany().getSymbol();
+				input.co_id = companySelector.randomCompany().getCoId();
 				break;
 			case "NEWS_ITEM":
-				input.symbol = companySelector.randomCompany().getSymbol();
+				input.co_id = companySelector.randomCompany().getCoId();
 				break;
 			case "SECURITY":
 				input.symbol = companySelector.randomCompany().getSymbol();
 				break;
 			case "TAXRATE":
-				input.tx_id = "US" + crand.rndIntRange(1, 6);
+				input.tx_id = taxRateSelector.randomTaxRateId();
 				break;
 			case "WATCH_ITEM":
 				input.c_id = customerSelector.randomCustomer().cId;
@@ -98,5 +99,11 @@ public class DataMaintenanceInputGenerator
 		}
 
 		return input;
+	}
+
+	private static int randomDailyMarketVolumeIncrement(CRandom rnd)
+	{
+		int volIncr = rnd.rndIntRange(-2, 3);
+		return (volIncr == 0) ? -3 : volIncr;
 	}
 }

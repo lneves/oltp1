@@ -127,7 +127,6 @@ public class SecurityTable implements TableGenerator<SecurityRow>
 		return row;
 	}
 
-
 	/**
 	 * Reset the state for the next load unit.
 	 */

@@ -1,14 +1,12 @@
 package org.oltp1.runner.tx.trade_order;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -17,16 +15,14 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.generator.TxInputGenerator;
-import org.oltp1.runner.model.Ticker;
-import org.oltp1.runner.model.TradeStatus;
 import org.oltp1.runner.model.TradeType;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.ExchangeEmulator;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.tx.market_feed.TxMarketFeed;
-import org.oltp1.runner.tx.market_feed.TxMarketFeedInput;
-import org.oltp1.runner.tx.trade_result.TxTradeResult;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import org.sql2o.data.Row;
@@ -36,19 +32,10 @@ public class TxTradeOrder extends TxBase
 	private static final String MEE_ACTION_PROCESS_ORDER = "eMEEProcessOrder";
 	private static final String MEE_ACTION_SET_LIMIT_ORDER_TRIGGER = "eMEESetLimitOrderTrigger";
 
-	private static final int max_feed_len = 20;
-
 	private final Sql2o sql2o;
 
 	private final TxInputGenerator txInputGen;
-	private final TradeOrderQueries sql;
-
-	private final TxTradeResult txTradeResult;
-	private final TxMarketFeed txMarketFeed;
-
-	private final Set<Ticker> tickers = new HashSet<Ticker>();
-
-	private final ExecutorService mee;
+	private final TradeOrderDialect sql;
 
 	private final EnumSet<TradeType> isLimit = EnumSet
 			.of(
@@ -56,15 +43,13 @@ public class TxTradeOrder extends TxBase
 					TradeType.LIMIT_BUY,
 					TradeType.STOP_LOSS);
 
-	public TxTradeOrder(TxInputGenerator txInputGen, SqlContext sqlCtx, TxStatsCollector tradeResultStats, TxStatsCollector mktFeedStats, ExecutorService mee)
+	private final ExchangeEmulator mee;
+
+	public TxTradeOrder(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics, ExchangeEmulator mee)
 	{
-		super(new TxStatsCollector("Trade-Order"));
-
+		super(metrics, new TxStatsCollector(TransactionSpec.TRADE_ORDER));
 		this.txInputGen = txInputGen;
-
-		this.txTradeResult = new TxTradeResult(sqlCtx, tradeResultStats);
-		this.txMarketFeed = new TxMarketFeed(sqlCtx, mktFeedStats);
-		this.sql = QueryFactory.getQueries(TradeOrderQueries.class, sqlCtx.getSqlEngine());
+		this.sql = QueryFactory.getQueries(TradeOrderDialect.class, sqlCtx.getSqlEngine());
 		this.mee = mee;
 
 		sql2o = sqlCtx.getSql2o();
@@ -73,9 +58,16 @@ public class TxTradeOrder extends TxBase
 	@Override
 	protected final TxOutput run()
 	{
-		TxTradeOrderOutput txOutput = new TxTradeOrderOutput();
-
 		final TxTradeOrderInput txInput = txInputGen.generateTradeOrderInput();
+
+		boolean valCondition = txInput.acct_id > 0 && txInput.trade_qty > 0 && txInput.requested_price > 0 && txInput.trade_type != null;
+
+		if (!valCondition)
+		{
+			throw new IllegalArgumentException("Invalid Trade-Order account, quantity, price or type");
+		}
+
+		TxTradeOrderOutput txOutput = new TxTradeOrderOutput();
 		final TradeOrderSession session = new TradeOrderSession();
 
 		session.put("trade_qty", txInput.trade_qty);
@@ -103,15 +95,26 @@ public class TxTradeOrder extends TxBase
 
 			executeFrame3(con, txInput, txOutput, session);
 
-			double commRate = session.getAsDouble("comm_rate");
-			long tradeQty = txInput.trade_qty;
-			double requestedPrice = txInput.requested_price;
+			if (txOutput.getStatus() < 0)
+			{
+				con.rollback();
+				return txOutput;
+			}
 
-			double commAmount = (commRate / 100) * tradeQty * requestedPrice;
+			BigDecimal commRate = BigDecimal.valueOf(session.getAsDouble("comm_rate"));
+			BigDecimal tradeQty = BigDecimal.valueOf(txInput.trade_qty);
+			BigDecimal reqPrice = BigDecimal.valueOf(txInput.requested_price);
+
+			BigDecimal commAmount = commRate
+					.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
+					.multiply(tradeQty)
+					.multiply(reqPrice)
+					.setScale(2, RoundingMode.HALF_UP);
+
 			String execName = StringUtils.trim(txInput.exec_f_name + " " + txInput.exec_l_name);
 			boolean isCash = !txInput.type_is_margin;
 
-			session.put("comm_amount", commAmount);
+			session.put("comm_amount", commAmount.doubleValue());
 			session.put("exec_name", execName);
 			session.put("is_cash", isCash);
 
@@ -127,65 +130,38 @@ public class TxTradeOrder extends TxBase
 			{
 				executeFrame6(con, txInput, txOutput, session);
 
-				Runnable tradeResultAction = new Runnable()
+				Map<String, Object> meeMsg = new HashMap<>();
+
+				meeMsg.put("requested_price", session.getAsDouble("market_price"));
+				meeMsg.put("symbol", session.getAsString("symbol"));
+				meeMsg.put("trade_id", session.getAsLong("t_id"));
+				meeMsg.put("trade_qty", txInput.trade_qty);
+				meeMsg.put("trade_type_id", txInput.trade_type.id);
+
+				boolean isMarket;
+				String eAction;
+
+				if (session.getAsBoolean("type_is_market"))
 				{
-					public void run()
-					{
-						Map<String, Object> meeMsg = new HashMap<>();
-
-						meeMsg.put("requested_price", session.get("market_price"));
-						meeMsg.put("symbol", session.get("symbol"));
-						meeMsg.put("trade_id", session.get("t_id"));
-						meeMsg.put("trade_qty", session.get("trade_qty"));
-						meeMsg.put("trade_type_id", txInput.trade_type.id);
-
-						if (session.getAsBoolean("type_is_market"))
-						{
-							meeMsg.put("eAction", MEE_ACTION_PROCESS_ORDER);
-						}
-						else
-						{
-							meeMsg.put("eAction", MEE_ACTION_SET_LIMIT_ORDER_TRIGGER);
-						}
-
-						txTradeResult.offer(meeMsg);
-					}
-				};
-
-				mee.execute(tradeResultAction);
-
-				Runnable mktFeedAction = new Runnable()
+					isMarket = true;
+					eAction = MEE_ACTION_PROCESS_ORDER;
+				}
+				else
 				{
-					public void run()
-					{
-						String t_symbol = session.getAsString("symbol");
-						long t_trade_qty = session.getAsLong("trade_qty");
-						double t_trade_price = session.getAsDouble("market_price");
+					isMarket = false;
+					eAction = MEE_ACTION_SET_LIMIT_ORDER_TRIGGER;
+				}
 
-						List<Ticker> batch;
+				TxTradeOrderResult tr = new TxTradeOrderResult(
+						session.getAsDouble("market_price"),
+						session.getAsString("symbol"),
+						session.getAsLong("t_id"),
+						txInput.trade_qty,
+						txInput.trade_type.id,
+						eAction,
+						isMarket);
 
-						synchronized (tickers)
-						{
-							tickers.add(new Ticker(t_symbol, t_trade_price, t_trade_qty));
-							if (tickers.size() < 10)
-								return;
-
-							batch = List.copyOf(tickers);
-							tickers.clear();
-						}
-
-						TxMarketFeedInput txMktFeedIn = new TxMarketFeedInput(
-								TradeStatus.SUBMITTED,
-								TradeType.LIMIT_BUY,
-								TradeType.LIMIT_SELL,
-								TradeType.STOP_LOSS,
-								batch,
-								batch.size());
-						txMarketFeed.offer(txMktFeedIn);
-					}
-				};
-
-				mee.execute(mktFeedAction);
+				mee.submitTradeOrderToMarket(tr);
 			}
 		}
 		catch (Throwable t)
@@ -284,7 +260,7 @@ public class TxTradeOrder extends TxBase
 				.addParameter("trade_type_id", txInput.trade_type.id)
 				.executeAndFetchTable()
 				.rows()
-				.get(0);
+				.getFirst();
 
 		boolean isMarket = tt.getBoolean("type_is_market");
 		boolean isSell = tt.getBoolean("type_is_sell");
@@ -480,14 +456,13 @@ public class TxTradeOrder extends TxBase
 			txOutput.setStatus(-733);
 			txOutput.setStatusMessage("(chargeAmount == 0.00)");
 		}
-
 	}
 
 	private void executeFrame4(final Connection con, final TxTradeOrderInput txInput, final TxTradeOrderOutput txOutput, final TradeOrderSession session)
 	{
 		long tid = ((Number) con
 				.createQuery(sql.insertTrade(), true)
-				.addParameter("trade_dts", LocalDateTime.now())
+				.addParameter("trade_dts", txInputGen.now())
 				.addParameter("status_id", session.get("status_id"))
 				.addParameter("trade_type_id", txInput.trade_type.id)
 				.addParameter("is_cash", session.get("is_cash"))
@@ -502,8 +477,8 @@ public class TxTradeOrder extends TxBase
 				.executeUpdate()
 				.getKey()).longValue();
 
-		// boolean isMarket = session.getAsBoolean("type_is_market");
-		// if (!isMarket)
+		session.put("t_id", tid);
+
 		TradeType tradeType = txInput.trade_type;
 		if (isLimit.contains(tradeType))
 		{
@@ -521,11 +496,9 @@ public class TxTradeOrder extends TxBase
 		con
 				.createQuery(sql.insertTradeHistory())
 				.addParameter("t_id", tid)
-				.addParameter("trade_dts", LocalDateTime.now())
+				.addParameter("trade_dts", txInputGen.now())
 				.addParameter("status_id", session.get("status_id"))
 				.executeUpdate();
-
-		session.put("t_id", tid);
 	}
 
 	private void executeFrame5(final Connection con)
@@ -537,6 +510,7 @@ public class TxTradeOrder extends TxBase
 	private void executeFrame6(final Connection con, final TxTradeOrderInput txInput, final TxTradeOrderOutput txOutput, final TradeOrderSession session)
 	{
 		con.commit();
+		txInputGen.recordNewTradeId(session.getAsLong("t_id"));
 
 		Map<String, Object> tradeOrder = new HashMap<>();
 		tradeOrder.put("buy_value", session.get("buy_value"));
@@ -576,5 +550,4 @@ public class TxTradeOrder extends TxBase
 	{
 		return !Strings.CI.equals(a, b);
 	}
-
 }

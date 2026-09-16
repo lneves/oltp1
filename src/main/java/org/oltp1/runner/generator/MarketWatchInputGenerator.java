@@ -12,6 +12,9 @@ public class MarketWatchInputGenerator
 	private static final int MW_PERCENT_BY_INDUSTRY = 5;
 	private static final int MW_PERCENT_BY_WATCH_LIST = 60;
 	// The remaining 35% is by_acct_id
+	
+	// reference InputFlatFilesDeclarations.h iBaseCompanyCount = 5000;
+	private static final int BASE_COMPANY_COUNT = 5000;
 
 	// Constants from DailyMarketTable.h for date generation
 	private static final LocalDate MW_DAILY_MARKET_BASE_DATE = LocalDate.of(2000, Month.JANUARY, 3);
@@ -43,37 +46,60 @@ public class MarketWatchInputGenerator
 		// Industry:
 		// 5% 4.5% to 5.5%
 
-		TxMarketWatchInput input = new TxMarketWatchInput();
 		CRandom random = ThreadLocalCRandom.get();
 
 		// Randomly determine the input type for the transaction.
 		int threshold = random.rndIntRange(1, 100);
 
+		long acctId = 0;
+		long cId = 0;
+		long startingCoId = 0;
+		long endingCoId = 0;
+		LocalDate startDay = getStartDay(random);
+		String industryName = null;
+
 		if (threshold <= MW_PERCENT_BY_INDUSTRY)
 		{
 			// By Industry: Select a random industry name.
+
 			int industryIndex = random.rndIntRange(0, industrySelector.getLen() - 1);
-			input.industry_name = industrySelector.get(industryIndex).getInName();
-			input.starting_co_id = companySelector.getMinCoId();
-			input.ending_co_id = companySelector.getMaxCoId();
+			industryName = industrySelector.get(industryIndex).getInName();
+
+			long minCoId = companySelector.getMinCoId();
+			long maxCoId = companySelector.getMaxCoId();
+			long activeCompanies = companySelector.getActiveCompanyCount();
+
+			if (activeCompanies <= BASE_COMPANY_COUNT)
+			{
+			    // Standard-size database: query the entire active company range.
+			    // Reference: starting_co_id = startFromCompany; ending = start + active - 1.
+			    startingCoId = minCoId;
+			    endingCoId = maxCoId;
+			}
+			else
+			{
+			    // Scaled database: reference uses a fixed BASE_COMPANY_COUNT-company window.
+			    // start in [minCoId, maxCoId - BASE_COMPANY_COUNT + 1] so the window stays
+			    // within the existing ids; end = start + BASE_COMPANY_COUNT - 1.
+			    long maxStartCoId = Math.max(minCoId, maxCoId - BASE_COMPANY_COUNT + 1);
+			    startingCoId = random.rndInt64Range(minCoId, maxStartCoId);
+			    endingCoId = startingCoId + BASE_COMPANY_COUNT - 1;
+			}
 		}
 		else if (threshold <= MW_PERCENT_BY_INDUSTRY + MW_PERCENT_BY_WATCH_LIST)
 		{
 			// By Watch List: Select a random customer ID.
 			RandomCustomer customer = customerSelector.randomCustomer();
-			input.c_id = customer.cId;
+			cId = customer.cId;
 		}
 		else
 		{
 			// By Account ID: Select a random customer account ID.
 			RandomCustomer customer = customerSelector.randomCustomer();
-			input.acct_id = customerSelector.getRndAccIdForCustomer(customer);
+			acctId = customerSelector.getRndAccIdForCustomer(customer);
 		}
 
-		// Generate a random start date for the query.
-		input.start_day = getStartDay(random);
-
-		return input;
+		return new TxMarketWatchInput(acctId, cId, startingCoId, endingCoId, startDay, industryName);
 	}
 
 	// This logic is ported from the C++ source to generate a non-uniform date.

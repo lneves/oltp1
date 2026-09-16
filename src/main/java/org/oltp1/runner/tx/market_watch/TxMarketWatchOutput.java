@@ -2,7 +2,7 @@ package org.oltp1.runner.tx.market_watch;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.oltp1.runner.perf.TxOutput;
+import org.oltp1.runner.runtime.TxOutput;
 
 public class TxMarketWatchOutput extends TxOutput
 {

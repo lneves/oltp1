@@ -1,6 +1,7 @@
 package org.oltp1.egen.model;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.io.AppendableRow;
@@ -21,9 +22,9 @@ public class DailyMarketRow implements AppendableRow
 		return new StringJoiner("|")
 				.add(DM_DATE.toFormattedString(10)) // YYYY-MM-DD
 				.add(DM_S_SYMB)
-				.add(String.format("%.2f", DM_CLOSE))
-				.add(String.format("%.2f", DM_HIGH))
-				.add(String.format("%.2f", DM_LOW))
+				.add(String.format(Locale.ROOT, "%.2f", DM_CLOSE))
+				.add(String.format(Locale.ROOT, "%.2f", DM_HIGH))
+				.add(String.format(Locale.ROOT, "%.2f", DM_LOW))
 				.add(String.valueOf(DM_VOL))
 				.toString();
 	}

@@ -19,7 +19,8 @@ public class Main implements Runnable
 {
 	public static void main(String[] args)
 	{
-		System.setProperty(
+		System
+				.setProperty(
 						"logback.statusListenerClass",
 						"ch.qos.logback.core.status.NopStatusListener");
 

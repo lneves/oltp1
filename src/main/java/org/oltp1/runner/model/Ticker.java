@@ -36,7 +36,7 @@ public class Ticker
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(symbol);
+		return Objects.hash(symbol, Double.valueOf(tradePrice), Long.valueOf(tradeQty));
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class Ticker
 		if (getClass() != obj.getClass())
 			return false;
 		Ticker other = (Ticker) obj;
-		return Objects.equals(symbol, other.symbol);
+		return Objects.equals(symbol, other.symbol) && Double.doubleToLongBits(tradePrice) == Double.doubleToLongBits(other.tradePrice) && tradeQty == other.tradeQty;
 	}
 
 	@Override

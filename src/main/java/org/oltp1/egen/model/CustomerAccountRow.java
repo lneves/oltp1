@@ -1,5 +1,6 @@
 package org.oltp1.egen.model;
 
+import java.util.Locale;
 import java.util.StringJoiner;
 
 public class CustomerAccountRow
@@ -20,7 +21,7 @@ public class CustomerAccountRow
 				.add(String.valueOf(CA_C_ID))
 				.add(CA_NAME)
 				.add(String.valueOf(CA_TAX_ST))
-				.add(String.format("%.2f", CA_BAL))
+				.add(String.format(Locale.ROOT, "%.2f", CA_BAL))
 				.toString();
 	}
 }

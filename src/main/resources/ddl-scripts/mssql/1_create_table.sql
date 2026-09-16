@@ -166,7 +166,7 @@ b_id bigint NOT NULL
 CREATE TABLE cash_transaction
 (
 ct_t_id bigint NOT NULL
-, ct_dts datetime NOT NULL
+, ct_dts datetime2 NOT NULL
 , ct_amt decimal(10,2) NOT NULL
 , ct_name varchar(100) NULL
 );
@@ -296,7 +296,7 @@ CREATE TABLE holding
 h_t_id bigint NOT NULL
 , h_ca_id bigint NOT NULL
 , h_s_symb varchar(15) NOT NULL
-, h_dts datetime NOT NULL
+, h_dts datetime2 NOT NULL
 , h_price decimal(8,2) NOT NULL CHECK (h_price > 0)
 , h_qty integer NOT NULL
 );
@@ -326,7 +326,7 @@ in_id char(2) NOT NULL
 CREATE TABLE last_trade
 (
 lt_s_symb varchar(15) NOT NULL
-, lt_dts datetime NOT NULL
+, lt_dts datetime2 NOT NULL
 , lt_price decimal(8,2) NOT NULL
 , lt_open_price decimal(8,2) NOT NULL
 , lt_vol bigint NOT NULL
@@ -338,7 +338,7 @@ ni_id bigint NOT NULL
 , ni_headline varchar(80) NOT NULL
 , ni_summary varchar(255) NOT NULL
 , ni_item varchar(max) NOT NULL
-, ni_dts datetime NOT NULL
+, ni_dts datetime2 NOT NULL
 , ni_source varchar(30) NOT NULL
 , ni_author varchar(30) NULL
 );
@@ -399,7 +399,7 @@ tx_id char(4) NOT NULL
 CREATE TABLE trade
 (
 t_id bigint IDENTITY(1,1) NOT NULL
-, t_dts datetime NOT NULL
+, t_dts datetime2 NOT NULL
 , t_st_id char(4) NOT NULL
 , t_tt_id char(3) NOT NULL
 , t_is_cash bit NOT NULL
@@ -418,7 +418,7 @@ t_id bigint IDENTITY(1,1) NOT NULL
 CREATE TABLE trade_history
 (
 th_t_id bigint NOT NULL
-, th_dts datetime NOT NULL
+, th_dts datetime2 NOT NULL
 , th_st_id char(4) NOT NULL
 );
 
@@ -465,7 +465,7 @@ CREATE TABLE runtime_info
 (
 days_of_initial_trades int NOT NULL
 , max_initial_t_id bigint NOT NULL
-, end_of_initial_trades datetime NOT NULL
+, end_of_initial_trades datetime2 NOT NULL
 );
 
 GO

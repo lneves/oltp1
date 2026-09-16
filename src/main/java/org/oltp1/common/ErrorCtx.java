@@ -24,11 +24,15 @@ public class ErrorCtx
 
 		if (se.isPresent())
 		{
-			source = se.toString();
+			source = se.get().toString();
+		}
+		else if (stack.length > 0)
+		{
+			source = stack[0].toString();
 		}
 		else
 		{
-			source = stack[0].toString();
+			source = "Unknown (stack trace omitted by JVM)";
 		}
 	}
 

@@ -97,8 +97,8 @@ oltp1 egen -c 5000 -t 5000 -w 1 -o ./flat_out
 export OLTP1_PASSWORD='<password>'
 oltp1 initdb -e PGSQL -h localhost -U admin -d ./flat_out
 
-# run 10 minutes with 50 clients 
-oltp1 driver  --engine PGSQL --host localhost --clients 50 --duration 600
+# run 10 minutes with 50 clients (warm-up excluded from measurement)
+oltp1 driver --engine PGSQL --host localhost --user admin --clients 50 --duration 600
 ```
 
 > **Having container start failures due to permissions?** See **[Troubleshooting — Docker data directory permissions](docker_troubleshooting.md)**.
@@ -117,13 +117,13 @@ Expected runtime: ~5–10 minutes for 5,000 customers and 300 trade days.
 
 More options:
 
-| Option        | Default  | Description                                              |
-| ------------- | -------- | -------------------------------------------------------- |
-| `-c <number>` | 5000     | Customers generated for this instance                    |
-| `-t <number>` | 5000     | Total customers in the full database                     |
-| `-f <number>` | 500      | Scale factor (customers per 1 tpsE)                      |
-| `-w <number>` | 300      | Initial workdays (8‑hour days) of trade history to load  |
-| `-o <path>`   | flat_out | Output path for the generated files                      |
+| Option        | Default    | Description                                              |
+| ------------- | ---------- | -------------------------------------------------------- |
+| `-c <number>` | 5000       | Customers generated for this instance                    |
+| `-t <number>` | 5000       | Total customers in the full database                     |
+| `-f <number>` | 500        | Scale factor (customers per 1 tpsE)                      |
+| `-w <number>` | 300        | Initial workdays (8‑hour days) of trade history to load  |
+| `-o <path>`   | ./flat_out | Output path for the generated files                      |
 
 For a complete list and detailed explanations, see [egen.md](egen.md).
 
@@ -134,12 +134,14 @@ For a complete list and detailed explanations, see [egen.md](egen.md).
 You can either use the provided `docker-compose.yml` files to spin up a local database instance, or connect to your own pre‑configured server.
 
 Pre‑configured Docker environments are provided for:
-- PostgreSQL 17
-- Microsoft SQL Server 2022
+- PostgreSQL 18
+- Microsoft SQL Server 2025
 - OrioleDB
-- MariaDB
+- MariaDB 12
 
 > To use an existing server, skip Docker and ensure your database is accessible with appropriate permissions.
+
+Note: MariaDB: the loader uses LOAD DATA LOCAL INFILE. The server must have local_infile=1. The provided Docker environment sets this in docker/mariadb/custom_my.cnf. On an external server, add local_infile=1 under [mysqld] (persistent) or run SET GLOBAL local_infile=1; as an administrator (non-persistent). initdb fails with an explanatory error if it is disabled
 
 To use Docker:
 
@@ -158,20 +160,28 @@ oltp1 initdb -e <engine> -h localhost -U <db_user> -P <db_user_password> -d ./fl
 ```
 
 The `initdb` operation will:
-1. Create the database and schema
+1. **Drop and recreate** the `tpce` database (on the PostgreSQL/OrioleDB Docker setups it also drops the
+   `tblsp_tpce` tablespace), then create the schema
 2. Load the generated data files
 3. Create indexes and constraints
 4. Tweak database configurations
 
 *Depending on dataset size and hardware, this can take from a few minutes to several hours.*
 
-Run `oltp1 initdb -h` to see the available options
+> ⚠️ **Warning: `initdb` destroys the existing `tpce` database before validating the data files.**
+> The database is dropped first; `--data-dir` (`-d`) is only checked while tables are being loaded.
+> If the directory is missing, empty, or incomplete, the current benchmark dataset is deleted, the
+> load fails partway through, and the database is left partially populated. There is no rollback.
+> Before running `initdb`, verify that `-d` points to a complete `egen` output directory, and back up
+> any `tpce` database you cannot regenerate.
+
+Run `oltp1 initdb --help` to see the available options
 
 ## Running the Benchmark Driver
 
 Use the `driver` action to execute the benchmark against your database.
 
-Run `oltp1 driver -h` to see the available options. Example (10‑minute run, 50 clients, PostgreSQL on localhost):
+Run `oltp1 driver --help` to see the available options. Example (10‑minute run, 50 clients, PostgreSQL on localhost):
 
 ```bash
 oltp1 driver \
@@ -184,11 +194,33 @@ oltp1 driver \
     --duration 600
 ```
 
+The first 15% of every run (clamped to 180–600 seconds) is warm‑up and is **excluded** from the
+reported results; the remainder is the measurement interval. For example, `--duration 600` runs
+180 s of warm‑up followed by 420 s of measurement. The split is logged at startup.
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `--host` / `-h` | – | Database host |
+| `--port` / `-p` | engine default | Database port |
+| `--user` / `-U` | – | Database user |
+| `--password` / `-P` | `$OLTP1_PASSWORD` | Database password |
+| `--engine` / `-e` | – | `PGSQL`, `MSSQL`, `MARIADB` or `ORIOLEDB` |
+| `--duration` / `-d` | 360 | Total run duration in seconds, including warm‑up |
+| `--clients` / `-c` | 10 | Number of simulated clients |
+| `--baseline` / `-b` | off | Run only the baseline query (`SELECT 0`) |
+| `--pacing` / `-w` | off | Enable aggregate transaction‑rate pacing |
+| `--tps` | 10 | Target transactions/second when `--pacing` is enabled |
+| `--json-output` / `-j` | off | Also write a timestamped JSON report |
+| `--quiet` / `-q` | off | Suppress per‑transaction error logging |
+| `--skip-permission-validation` | off | Warn instead of aborting when `ACCOUNT_PERMISSION` owner coverage is inconsistent |
+| `--help` | – | Show all options |
+
 ## Benchmark Details
 
 ### Transaction Mix
 
-The workload is designed to follow the TPC-E specification's transaction mix closely:
+The workload broadly targets the TPC-E specification's transaction mix (see deviation 5):
+
 
 | Transaction         | Mix Percentage |
 | ------------------- | :------------: |
@@ -203,7 +235,7 @@ The workload is designed to follow the TPC-E specification's transaction mix clo
 | Trade-Update        |      2.0%      |
 | Market-Feed         |      1.0%      |
 | Data-Maintenance    |  ≈1 per minute |
-| Trade-Cleanup       |  once at start |
+| Trade-Cleanup       |  once per run  |
 
 > *Note*: `Trade-Result` and `Market-Feed` are triggered by `Trade-Order` and their percentages are included for completeness.
 
@@ -225,12 +257,24 @@ One potential issue, however, is the lack of guaranteed ordering. The specificat
 * **Deviation**: For complex inputs, this implementation passes data as **JSON** and uses database-specific functions to parse them (e.g., `jsonb_to_recordset` in PostgreSQL and `OPENJSON` in SQL Server). The TPC-E spec does not define inputs in this manner.
 * **Reasoning**: Passing data as JSON simplifies the client-side code by avoiding the need to loop and bind dozens of individual parameters while also avoiding costly client-server roundtrips.
 
+#### 4. Isolation Level
+* **Deviation**: Use of READ_COMMITTED for all database engines and transactions. 
+* **Reasoning**: Transactions execute at READ COMMITTED isolation because the benchmark is intended to characterize systems under a commonly deployed application consistency model rather than measure performance while satisfying the TPC-E isolation requirements. The resulting measurements therefore represent throughput and latency under READ COMMITTED semantics and must not be compared with published TPC-E results.
+
+#### 5. Transaction Mix Selection and Random-Number Generation
+
+* **Deviation**: The official TPC-E driver selects client transactions with the `CCETxnMixGenerator` "card-deck shuffle" (also Knuth algorithm): an 890-card deck is built with exact counts for the eight client transactions (Trade-Status 190, Market-Watch 180, Security-Detail 140, Customer-Position 130, Trade-Order 101, Trade-Lookup 80, Trade-Update 20, Broker-Volume 49, out of 1000), shuffled with a seeded `CRandom`, and consumed one card per transaction, recycling the deck when exhausted. Each emulated client also gets its own reproducible RNG seeds for the mix and for transaction inputs (`TxnMixRNGSeed` / `TxnInputRNGSeed`).
+
+  This implementation instead selects each transaction independently with `ThreadLocalRandom`: it draws a uniform random number and picks the transaction whose cumulative-probability key is nearest above it, using weights renormalized by 1/0.89 because the client mix deliberately excludes `Trade-Result` and `Market-Feed` (the MEE produces those). Transaction inputs are generated from a process-wide `ThreadLocal<CRandom>` whose per-thread seeds are handed out in thread-creation order; there is no command-line option to set or record a seed.
+
+* **Reasoning**: Independent weighted sampling is simpler than maintaining a shuffled deck and converges to the same *average* proportions, so the long-run client-side ratios match the reference — for example `Trade-Order` is attempted for about 101/890 ≈ 11.35% of client transactions, not the nominal 10.1%. It does not, however, guarantee the exact per-890-transaction counts that the card-deck algorithm provides, so the realized mix fluctuates from run to run and can deviate noticeably on short runs or with few clients; a cross-engine comparison therefore carries mix variance that a card-deck driver would not have. Since input seeds depend on thread creation order and scheduling, runs are also not reproducible: the same command generates a different input stream each time. Finally, the reported `Actual(%)` is computed over **all attempted transactions** — including MEE-generated `Trade-Result`/`Market-Feed` and periodic `Data-Maintenance` — so it is not expected to match the nominal `Target(%)` even if the client-side mix were exact.
+
 #### Sample Output
 
 ```text
 #SUT
 
-PostgreSQL 17.5 (Debian 17.5-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
 
 Date: 2025-08-02T22:27:41.901353
 
@@ -256,10 +300,12 @@ Tx Rate: 859.36 tx/sec
 
 ##### Understanding results
 
+- **Attempts / Success**: transactions submitted vs. completed successfully; response‑time statistics cover successful completions only
 - **Tx Rate**: total transactions per second across all types
 - **Mean/StdDev**: average response time and variance
 - **Pct90**: 90% of transactions completed within this time
-- **Actual%**: should closely match Target% for valid results
+- **Actual%**: share of all attempted transactions per type, including MEE-generated Trade-Result/Market-Feed and periodic Data-Maintenance; it is not expected to match Target% exactly, and short runs can show wider swings because the client mix is sampled independently rather than dealt from a fixed card deck (see deviation 5)
+
 
 ### Baseline query benchmark
 

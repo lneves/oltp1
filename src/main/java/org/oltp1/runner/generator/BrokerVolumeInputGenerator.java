@@ -19,8 +19,6 @@ public class BrokerVolumeInputGenerator
 
 	public TxBrokerVolumeInput generateBrokerVolumeInput()
 	{
-
-		TxBrokerVolumeInput input = new TxBrokerVolumeInput();
 		CRandom crand = ThreadLocalCRandom.get();
 
 		// Determine the number of brokers to select.
@@ -39,10 +37,7 @@ public class BrokerVolumeInputGenerator
 				.map(b -> b.getName())
 				.toArray(String[]::new);
 
-		input.broker_list = aBrk;
-
-		// Select a random sector name.
-		input.sector_name = sectorSelector.get().getName();
+		TxBrokerVolumeInput input = new TxBrokerVolumeInput(aBrk, sectorSelector.get().getName());
 
 		return input;
 	}

@@ -1,5 +1,6 @@
 package org.oltp1.egen.model;
 
+import java.util.Locale;
 import java.util.StringJoiner;
 
 public class TaxrateRow
@@ -14,7 +15,7 @@ public class TaxrateRow
 		return new StringJoiner("|")
 				.add(TX_ID)
 				.add(TX_NAME)
-				.add(String.format("%.5f", TX_RATE))
+				.add(String.format(Locale.ROOT, "%.5f", TX_RATE))
 				.toString();
 	}
 }

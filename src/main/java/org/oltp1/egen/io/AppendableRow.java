@@ -7,7 +7,7 @@ import org.oltp1.egen.util.DateTime;
 public interface AppendableRow
 {
 	public void writeObject(Appendable out) throws IOException;
-	
+
 	default public void write(Appendable out, String value) throws IOException
 	{
 		out.append(value);

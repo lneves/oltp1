@@ -7,27 +7,29 @@ import java.util.Map;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
 public class TxTradeStatus extends TxBase
 {
+	private static final int MAX_TRADE_STATUS_LEN = 50;
+
 	private final Sql2o sql2o;
-
 	private final TxInputGenerator txInputGen;
-	private final TradeStatusQueries sql;
+	private final TradeStatusDialect sql;
 
-	public TxTradeStatus(TxInputGenerator txInputGen, SqlContext sqlCtx)
+	public TxTradeStatus(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(new TxStatsCollector("Trade-Status"));
-
+		super(metrics, new TxStatsCollector(TransactionSpec.TRADE_STATUS));
 		this.txInputGen = txInputGen;
 		this.sql2o = sqlCtx.getSql2o();
-		this.sql = QueryFactory.getQueries(TradeStatusQueries.class, sqlCtx.getSqlEngine());
+		this.sql = QueryFactory.getQueries(TradeStatusDialect.class, sqlCtx.getSqlEngine());
 	}
 
 	@Override
@@ -73,5 +75,11 @@ public class TxTradeStatus extends TxBase
 		txOutput.trade_name = tradeName;
 		txOutput.trade_status = tradeStatus;
 		txOutput.num_found = tradeStatus.size();
+
+		if (txOutput.num_found != MAX_TRADE_STATUS_LEN)
+		{
+			txOutput.setStatus(-911);
+			txOutput.setStatusMessage("num-found != max_trade_status_len");
+		}
 	}
 }

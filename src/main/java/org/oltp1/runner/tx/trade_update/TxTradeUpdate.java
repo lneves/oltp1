@@ -11,10 +11,12 @@ import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
 import org.oltp1.runner.db.SqlEngine;
 import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
@@ -25,7 +27,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 public class TxTradeUpdate extends TxBase
 {
 	private static final int max_trades = 20;
-
 	private static final int max_updates = 20;
 
 	private final ObjectMapper json = new ObjectMapper();
@@ -37,16 +38,14 @@ public class TxTradeUpdate extends TxBase
 	private final TxInputGenerator txInputGen;
 	private final TradeUpdateQueries sql;
 
-	public TxTradeUpdate(TxInputGenerator txInputGen, SqlContext sqlCtx)
+	public TxTradeUpdate(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(new TxStatsCollector("Trade-Update"));
-
+		super(metrics, new TxStatsCollector(TransactionSpec.TRADE_UPDATE));
 		this.txInputGen = txInputGen;
 		this.sqlCtx = sqlCtx;
 		this.sql2o = sqlCtx.getSql2o();
 		this.sql = QueryFactory.getQueries(TradeUpdateQueries.class, sqlCtx.getSqlEngine());
 		this.json.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
 	}
 
 	@Override
@@ -71,7 +70,14 @@ public class TxTradeUpdate extends TxBase
 				executeFrame3(con, txInput, txOutput);
 			}
 
-			con.commit();
+			if (txOutput.getStatus() < 0)
+			{
+				con.rollback();
+			}
+			else
+			{
+				con.commit();
+			}
 		}
 		catch (Throwable t)
 		{
@@ -86,49 +92,46 @@ public class TxTradeUpdate extends TxBase
 	private void executeFrame1(final Connection con, final TxTradeUpdateInput txInput, final TxTradeUpdateOutput txOutput) throws Exception
 	{
 		txOutput.frame_executed = 1;
-		int num_found = 0;
-		int num_updated = 0;
 
 		List<Long> tradeIds = Arrays
 				.stream(txInput.trade_id)
 				.boxed()
 				.collect(Collectors.toList());
 
-		num_found = tradeIds.size();
-
+		final String tradeLst;
 		if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
 		{
-			String tradesJsonArr = json.writeValueAsString(tradeIds);
-
-			con
-					.createQuery(sql.updateTradesFrame1())
-					.addParameter("trade_lst", tradesJsonArr)
-					.executeUpdate();
+			tradeLst = json.writeValueAsString(tradeIds);
 		}
 		else
 		{
-			String tradesCsv = getCsv(tradeIds);
-
-			con
-					.createQuery(sql.updateTradesFrame1())
-					.addParameter("trade_lst", tradesCsv)
-					.executeUpdate();
+			tradeLst = getCsv(tradeIds);
 		}
 
-		num_updated = con.getResult();
+		int num_found = con
+				.createQuery(sql.countTradesFrame1())
+				.addParameter("trade_lst", tradeLst)
+				.executeScalar(Long.class)
+				.intValue();
+
+		int num_updated = con
+				.createQuery(sql.updateTradesFrame1())
+				.addParameter("trade_lst", tradeLst)
+				.executeUpdate()
+				.getResult();
 
 		populateFullTradeInfo(con, tradeIds, txOutput);
 
 		if (num_found != max_trades)
 		{
 			txOutput.setStatus(-1011);
-			txOutput.setStatusMessage("(num_found != max_trades)");
+			txOutput.setStatusMessage(String.format("num_found(%d) != max_trades(%d)", num_found, max_trades));
 		}
 
 		if (num_updated != max_updates)
 		{
 			txOutput.setStatus(-1012);
-			txOutput.setStatusMessage("(num_updated != max_updates)");
+			txOutput.setStatusMessage(String.format("num_updated(%d) != max_updates(%d)", num_updated, max_updates));
 		}
 	}
 
@@ -261,7 +264,7 @@ public class TxTradeUpdate extends TxBase
 
 		if ((num_found < 0) || (num_found > max_trades))
 		{
-			txOutput.setStatus(-1032);
+			txOutput.setStatus(-1031);
 			txOutput.setStatusMessage("(num_found < 0) || (num_found > max_trades)");
 		}
 		if (num_updated == 0)

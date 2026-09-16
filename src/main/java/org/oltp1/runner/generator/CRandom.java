@@ -67,7 +67,7 @@ public final class CRandom
 	 * since Java 9) for a more direct and efficient 128-bit multiplication. For
 	 * compatibility, this version mimics the C++ bit-shifting logic.
 	 */
-	private static long multiplyHigh(long x, long y)
+	protected static long multiplyHigh(long x, long y)
 	{
 		long x_low = x & MASK32;
 		long x_high = x >>> UPPER32;

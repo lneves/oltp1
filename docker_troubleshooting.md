@@ -36,13 +36,13 @@ mkdir -p ./pgdata ./mssql_data ./mariadb_data
 
 ```bash
 # Example for PostgreSQL
-docker run --rm --entrypoint bash postgres:17 -lc 'id -u; id -g'
+docker run --rm --entrypoint bash postgres:18 -lc 'id -u; id -g'
 
 # Example for MariaDB
-docker run --rm --entrypoint bash mariadb:11 -lc 'id -u; id -g'
+docker run --rm --entrypoint bash mariadb:12 -lc 'id -u; id -g'
 
 # Example for SQL Server (Linux)
-docker run --rm --entrypoint bash mcr.microsoft.com/mssql/server:2022-latest -lc 'id -u; id -g'
+docker run --rm --entrypoint bash mcr.microsoft.com/mssql/server:2025-latest -lc 'id -u; id -g'
 ```
 
 > Tip: You can also inspect a running container: `docker exec -it <name> sh -lc "id -u; id -g"`.
@@ -115,7 +115,7 @@ docker compose logs -f --tail=200 <service-name>
 ```yaml
 services:
   postgres:
-    image: postgres:17
+    image: postgres:18
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
@@ -133,7 +133,7 @@ services:
 ```yaml
 services:
   mariadb:
-    image: mariadb:11
+    image: mariadb:12
     environment:
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
     volumes:
@@ -152,7 +152,7 @@ services:
 ```yaml
 services:
   mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2025-latest
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=${SA_PASSWORD}
@@ -169,7 +169,7 @@ If you don’t need to see the raw files on the host, **use a named volume** ins
 ```yaml
 services:
   postgres:
-    image: postgres:17
+    image: postgres:18
     volumes:
       - pgdata:/var/lib/postgresql/data
 

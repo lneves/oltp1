@@ -220,7 +220,7 @@ public class GenerateAndLoad
 			}
 		}
 	}
-	
+
 	private <T extends AppendableRow> void generateAndLoadScalingTableFast(String tableName, String fileName, TableGenerator<T> generator) throws IOException
 	{
 		System.out.printf("Generating %s table...%n", tableName.toUpperCase());

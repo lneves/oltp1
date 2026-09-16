@@ -1,44 +1,39 @@
 package org.oltp1.runner.tx.trade_lookup;
 
-import java.sql.Array;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.oltp1.common.ErrorCtx;
 import org.oltp1.runner.db.SqlContext;
-import org.oltp1.runner.db.SqlEngine;
 import org.oltp1.runner.generator.TxInputGenerator;
-import org.oltp1.runner.perf.TxBase;
-import org.oltp1.runner.perf.TxOutput;
-import org.oltp1.runner.perf.TxStatsCollector;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.Converter;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
 import org.oltp1.runner.tx.QueryFactory;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class TxTradeLookup extends TxBase
 {
-	private final ObjectMapper json = new ObjectMapper();
-	private final SqlContext sqlCtx;
-	private final Sql2o sql2o;
+	private static final int FRAME4_MAX_ROWS = 20;
 
 	private final TxInputGenerator txInputGen;
-	private final TradeLookupQueries sql;
+	private final Sql2o sql2o;
+	private final TradeLookupDialect sql;
 
-	public TxTradeLookup(TxInputGenerator txInputGen, SqlContext sqlCtx)
+	public TxTradeLookup(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
 	{
-		super(new TxStatsCollector("Trade-Lookup"));
-
+		super(metrics, new TxStatsCollector(TransactionSpec.TRADE_LOOKUP));
 		this.txInputGen = txInputGen;
-		this.sqlCtx = sqlCtx;
 		this.sql2o = sqlCtx.getSql2o();
-		this.sql = QueryFactory.getQueries(TradeLookupQueries.class, sqlCtx.getSqlEngine());
+		this.sql = QueryFactory.getQueries(TradeLookupDialect.class, sqlCtx.getSqlEngine());
 	}
 
 	@Override
@@ -84,27 +79,10 @@ public class TxTradeLookup extends TxBase
 	{
 		Query frm1Query = con.createQuery(sql.getTradeInfoFrame1());
 
-		if (sqlCtx.getSqlEngine() == SqlEngine.POSTGRESQL)
-		{
-			Array tradeIds = con
-					.getJdbcConnection()
-					.createArrayOf("bigint", ArrayUtils.toObject(txInput.trade_id));
-
-			frm1Query.addParameter("trade_ids", tradeIds);
-
-		}
-		else if (sqlCtx.getSqlEngine() == SqlEngine.MSSQL)
-		{
-			String tradeIdsCsv = StringUtils.join(txInput.trade_id, ',');
-			frm1Query.addParameter("trade_ids", tradeIdsCsv);
-		}
-		else if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
-		{
-			String tradeIdsJson = json.writeValueAsString(txInput.trade_id);
-			frm1Query.addParameter("trade_ids", tradeIdsJson);
-		}
+		String paramTradeIds = sql.buildTradeIdList(Arrays.stream(txInput.trade_id).boxed().toList());
 
 		List<Map<String, Object>> lstTrades = frm1Query
+				.addParameter("trade_ids", paramTradeIds)
 				.addParameter("max_trades", txInput.max_trades)
 				.executeAndFetchTable()
 				.asList();
@@ -114,7 +92,7 @@ public class TxTradeLookup extends TxBase
 		if (txOutput.num_found != txInput.max_trades)
 		{
 			txOutput.setStatus(-611);
-			txOutput.setStatusMessage("num_found != max_trades");
+			txOutput.setStatusMessage(String.format("num_found(%d) != max_trades(%d)", txOutput.num_found, txInput.max_trades));
 		}
 
 		txOutput.lst_trades_frm1 = lstTrades;
@@ -149,8 +127,16 @@ public class TxTradeLookup extends TxBase
 
 		txOutput.lst_trades_frm2 = lstTrades;
 
-		List<Map<String, Object>> historyTrades = fetchTradeHistory(con, lstTrades);
-		txOutput.lst_trades_history = historyTrades;
+		if (lstTrades.isEmpty())
+		{
+			List<Map<String, Object>> historyTrades = Collections.emptyList();
+			txOutput.lst_trades_history = historyTrades;
+		}
+		else
+		{
+			List<Map<String, Object>> historyTrades = fetchTradeHistory(con, lstTrades);
+			txOutput.lst_trades_history = historyTrades;
+		}
 	}
 
 	private void executeFrame3(final Connection con, final TxTradeLookupInput txInput, final TxTradeLookupOutput txOutput) throws SQLException
@@ -185,62 +171,71 @@ public class TxTradeLookup extends TxBase
 
 	private void executeFrame4(final Connection con, final TxTradeLookupInput txInput, final TxTradeLookupOutput txOutput)
 	{
-		List<Map<String, Object>> lstTrades = con
-				.createQuery(sql.getFrame4())
+		Long tradeId = con
+				.createQuery(sql.getFrame4TargetTrade())
 				.addParameter("ca_id", txInput.acct_id)
 				.addParameter("start_dts", txInput.start_trade_dts)
-				.executeAndFetchTable()
-				.asList();
+				.executeScalar(Long.class);
 
-		txOutput.num_found = lstTrades.size();
+		int numTradesFound = (tradeId == null) ? 0 : 1;
 
-		if ((txOutput.num_found < 1) || (txOutput.num_found > 20))
+		List<Map<String, Object>> lstTrades = Collections.emptyList();
+
+		if (numTradesFound == 1)
 		{
-			txOutput.setStatus(-631);
-			txOutput.setStatusMessage("(num_found < 1) || (num_found > 20)");
+			lstTrades = con
+					.createQuery(sql.getFrame4HoldingHistory())
+					.addParameter("trade_id", tradeId)
+					.addParameter("max_rows", FRAME4_MAX_ROWS)
+					.executeAndFetchTable()
+					.asList();
 		}
 
+		txOutput.trade_id = tradeId;
+		txOutput.num_trades_found = numTradesFound;
+		txOutput.num_found = lstTrades.size();
 		txOutput.lst_trades_frm4 = lstTrades;
+
+		int status = frame4Status(numTradesFound, txOutput.num_found);
+		txOutput.setStatus(status);
+
+		if (status != 0)
+		{
+			txOutput.setStatusMessage(String.format("num_trades_found(%d), num_found(%d)", numTradesFound, txOutput.num_found));
+		}
+	}
+
+	static int frame4Status(int numTradesFound, int numFound)
+	{
+		if (numTradesFound == 0)
+		{
+			return 641;
+		}
+
+		if (numTradesFound != 1)
+		{
+			return -641;
+		}
+
+		if (numFound < 1 || numFound > FRAME4_MAX_ROWS)
+		{
+			return -642;
+		}
+
+		return 0;
 	}
 
 	private List<Map<String, Object>> fetchTradeHistory(final Connection con, final List<Map<String, Object>> lstTrades) throws SQLException
 	{
+		List<Long> tradeIds = lstTrades
+				.stream()
+				.map(r -> Converter.getAsLong(r.get("t_id")))
+				.toList();
+
+		String paramTradeIds = sql.buildTradeIdList(tradeIds);
+
 		Query thQuery = con.createQuery(sql.getTradeHistory());
-
-		if (sqlCtx.getSqlEngine() == SqlEngine.POSTGRESQL)
-		{
-			Long[] tids = lstTrades
-					.stream()
-					.map(m -> ((Long) m.get("t_id")).longValue())
-					.toArray(Long[]::new);
-
-			Array tradeIds = con.getJdbcConnection().createArrayOf("bigint", tids);
-			thQuery.addParameter("trade_ids", tradeIds);
-		}
-		else if (sqlCtx.getSqlEngine() == SqlEngine.MSSQL)
-		{
-			String tradeIds = lstTrades
-					.stream()
-					.map(m -> ((Long) m.get("t_id")).toString())
-					.collect(Collectors.joining(","));
-
-			thQuery.addParameter("trade_ids", tradeIds);
-		}
-		else if (sqlCtx.getSqlEngine() == SqlEngine.MARIADB)
-		{
-			String tradeIds = lstTrades
-					.stream()
-					.map(m -> ((Long) m.get("t_id")).toString())
-					.collect(Collectors.joining(","));
-
-			String tradeIdsJson = String.format("[%s]", tradeIds);
-
-			thQuery.addParameter("trade_ids", tradeIdsJson);
-		}
-		else
-		{
-			throw new UnsupportedOperationException("Unsupported Database for this operation");
-		}
+		thQuery.addParameter("trade_ids", paramTradeIds);
 
 		return thQuery.executeAndFetchTable().asList();
 	}

@@ -1,12 +1,13 @@
 package org.oltp1.egen.model;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.StringJoiner;
 
 import org.oltp1.egen.io.AppendableRow;
 import org.oltp1.egen.util.DateTime;
 
-public class FinancialRow  implements AppendableRow
+public class FinancialRow implements AppendableRow
 {
 	public long FI_CO_ID;
 	public int FI_YEAR;
@@ -31,19 +32,19 @@ public class FinancialRow  implements AppendableRow
 				.add(String.valueOf(FI_YEAR))
 				.add(String.valueOf(FI_QTR))
 				.add(FI_QTR_START_DATE.toFormattedString(10)) // YYYY-MM-DD
-				.add(String.format("%.2f", FI_REVENUE))
-				.add(String.format("%.2f", FI_NET_EARN))
-				.add(String.format("%.2f", FI_BASIC_EPS))
-				.add(String.format("%.2f", FI_DILUT_EPS))
-				.add(String.format("%.2f", FI_MARGIN))
-				.add(String.format("%.2f", FI_INVENTORY))
-				.add(String.format("%.2f", FI_ASSETS))
-				.add(String.format("%.2f", FI_LIABILITY))
+				.add(String.format(Locale.ROOT, "%.2f", FI_REVENUE))
+				.add(String.format(Locale.ROOT, "%.2f", FI_NET_EARN))
+				.add(String.format(Locale.ROOT, "%.2f", FI_BASIC_EPS))
+				.add(String.format(Locale.ROOT, "%.2f", FI_DILUT_EPS))
+				.add(String.format(Locale.ROOT, "%.2f", FI_MARGIN))
+				.add(String.format(Locale.ROOT, "%.2f", FI_INVENTORY))
+				.add(String.format(Locale.ROOT, "%.2f", FI_ASSETS))
+				.add(String.format(Locale.ROOT, "%.2f", FI_LIABILITY))
 				.add(String.valueOf(FI_OUT_BASIC))
 				.add(String.valueOf(FI_OUT_DILUT))
 				.toString();
 	}
-	
+
 	@Override
 	public void writeObject(Appendable out) throws IOException
 	{

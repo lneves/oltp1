@@ -1,5 +1,7 @@
 package org.oltp1.runner.model;
 
+import java.util.Objects;
+
 public class Broker
 {
 	private final long id;
@@ -34,4 +36,24 @@ public class Broker
 	{
 		return String.format("Broker {b_id=%s, b_name=%s, b_st_id=%s}", id, name, statusId);
 	}
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hash(Long.valueOf(id));
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Broker other = (Broker) obj;
+		return id == other.id;
+	}
+
 }

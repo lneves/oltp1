@@ -43,7 +43,7 @@ These parameters control how the `EGenLoader` reads input files and writes its o
 
   * **`-o <dir>` (Output Directory)**
 
-      * **Default**: `flat_out/`
+      * **Default**: `./flat_out`
       * Specifies the directory where the generated data files will be written when using the `FLAT` load type.
 
 ## Table Generation Control
@@ -54,10 +54,8 @@ These flags allow you to generate specific subsets of the tables, which is usefu
 
   * **`-x`**: The default behavior if no other flag is specified. Generates **all** tables.
   * **`-xf`**: Generates only the **fixed-size tables** (e.g., `TAXRATE`, `EXCHANGE`).
-  * **`-xd`**: Generates all **scaling and growing tables**. This is equivalent to running with both `-xs` and `-xg`.
   * **`-xs`**: Generates only the **scaling tables**, whose size is proportional to the customer count (e.g., `CUSTOMER`, `COMPANY`).
-  * **`-xg`**: Generates only the **growing tables** (e.g., `TRADE`, `DAILY_MARKET`) and the `BROKER` table.
-  * **`-g`**: A special flag that **disables in-memory caching** when generating the growing tables. This reduces memory consumption at the cost of significantly slower generation speed.
+  * **`-xg`**: Generates only the growing tables (TRADE, TRADE_HISTORY, SETTLEMENT, CASH_TRANSACTION, HOLDING, HOLDING_HISTORY, HOLDING_SUMMARY, BROKER).
 
 ## Practical Examples 💡
 
@@ -68,7 +66,7 @@ These flags allow you to generate specific subsets of the tables, which is usefu
 This command generates a standard 5,000-customer database into flat files in the `./output_files/` directory.
 
 ```bash
-./EGenLoader -t 5000 -c 5000 -o ./output_files/
+oltp1 egen -t 5000 -c 5000 -o ./output_files/
 ```
 
 #### Example 2: A Large-Scale Parallel Load
@@ -77,19 +75,19 @@ Imagine you need to generate a **20,000-customer** database using **4 parallel l
 
   * **Loader 1:**
     ```bash
-    ./EGenLoader -t 20000 -c 5000 -b 1 -o ./loader1_out/
+    oltp1 egen -t 20000 -c 5000 -b 1 -o ./loader1_out/
     ```
   * **Loader 2:**
     ```bash
-    ./EGenLoader -t 20000 -c 5000 -b 5001 -o ./loader2_out/
+    oltp1 egen -t 20000 -c 5000 -b 5001 -o ./loader2_out/
     ```
   * **Loader 3:**
     ```bash
-    ./EGenLoader -t 20000 -c 5000 -b 10001 -o ./loader3_out/
+    oltp1 egen -t 20000 -c 5000 -b 10001 -o ./loader3_out/
     ```
   * **Loader 4:**
     ```bash
-    ./EGenLoader -t 20000 -c 5000 -b 15001 -o ./loader4_out/
+    oltp1 egen -t 20000 -c 5000 -b 15001 -o ./loader4_out/
     ```
 
 In this setup, each instance knows the total scale is 20,000 customers (`-t`) but only generates its assigned 5,000-customer chunk (`-c`), starting at the correct position (`-b`).

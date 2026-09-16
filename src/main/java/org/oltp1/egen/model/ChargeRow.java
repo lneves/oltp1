@@ -1,5 +1,6 @@
 package org.oltp1.egen.model;
 
+import java.util.Locale;
 import java.util.StringJoiner;
 
 public class ChargeRow
@@ -14,7 +15,7 @@ public class ChargeRow
 		return new StringJoiner("|")
 				.add(CH_TT_ID)
 				.add(String.valueOf(CH_C_TIER))
-				.add(String.format("%.2f", CH_CHRG))
+				.add(String.format(Locale.ROOT, "%.2f", CH_CHRG))
 				.toString();
 	}
 }

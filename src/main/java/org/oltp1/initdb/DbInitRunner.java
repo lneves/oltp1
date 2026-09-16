@@ -14,10 +14,13 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "initdb", mixinStandardHelpOptions = true, description = "Initialize database schema and load data")
+@Command(name = "initdb", mixinStandardHelpOptions = false, description = "Initialize database schema and load data")
 public class DbInitRunner implements Callable<Integer>
 {
 	private static final Logger log = LoggerFactory.getLogger(DbInitRunner.class);
+
+	@Option(names = { "--help" }, usageHelp = true, description = "Show this help message and exit")
+	public boolean helpRequested;
 
 	@Option(names = { "-h", "--host" }, description = "Database host", required = true)
 	public String host;
@@ -50,19 +53,25 @@ public class DbInitRunner implements Callable<Integer>
 
 			log.info("Initializing database with engine: {}", engine);
 			log.info("Data directory: {}", dataDir.toAbsolutePath());
-			
+
 			DbParameters dbParams = new DbParameters(host, port, host, user, password);
 
-			SqlContext sqlCtxInit = engine.createSqlContext(host, port, user, password, 1);
-	
-			DbInitializer initializer = new DbInitializer(sqlCtxInit, dbParams, dataDir);
+			try (SqlContext sqlCtxInit = engine.createSqlContext(host, port, user, password, 1);)
+			{
+				DbInitializer initializer = new DbInitializer(sqlCtxInit, dbParams, dataDir);
 
-			long startTime = System.currentTimeMillis();
-			initializer.initialize();
-			long endTime = System.currentTimeMillis();
+				long startTime = System.currentTimeMillis();
+				initializer.initialize();
+				long endTime = System.currentTimeMillis();
 
-			log.info("Database initialization completed in {} seconds", (endTime - startTime) / 1000);
-			return 0;
+				log.info("Database initialization completed in {} seconds", (endTime - startTime) / 1000);
+
+				return 0;
+			}
+			catch (Throwable t)
+			{
+				throw new RuntimeException(t);
+			}
 		}
 		catch (Throwable t)
 		{

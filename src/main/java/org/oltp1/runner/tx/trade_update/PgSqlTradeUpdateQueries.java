@@ -8,6 +8,21 @@ public class PgSqlTradeUpdateQueries extends DefaultTradeUpdateQueries
 {
 
 	@Override
+	public String countTradesFrame1()
+	{
+		return """
+				SELECT
+					COUNT(*) AS num_found
+				FROM
+					trade
+				WHERE
+					t_id IN (
+						SELECT trade_id::bigint FROM string_to_table(:trade_lst, ',') AS trade_id
+						);
+				""";
+	}
+
+	@Override
 	public String updateTradesFrame1()
 	{
 		return """

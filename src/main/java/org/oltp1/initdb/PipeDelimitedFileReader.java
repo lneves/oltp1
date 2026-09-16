@@ -11,7 +11,7 @@ import java.util.Set;
 
 import com.microsoft.sqlserver.jdbc.ISQLServerBulkData;
 
-public class PipeDelimitedFileReader implements ISQLServerBulkData
+public class PipeDelimitedFileReader implements ISQLServerBulkData, AutoCloseable
 {
 	private static final long serialVersionUID = 3703724643177850339L;
 	private final BufferedReader reader;
@@ -87,6 +87,7 @@ public class PipeDelimitedFileReader implements ISQLServerBulkData
 		return hasNext;
 	}
 
+	@Override
 	public void close() throws Exception
 	{
 		if (reader != null)

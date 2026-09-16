@@ -41,7 +41,7 @@ public class CompanyTable implements TableGenerator<CompanyRow>
 		this.companyCount = this.companyFile.calculateCompanyCount(customerCount);
 		this.startFromCompany = this.companyFile.calculateStartFromCompany(startFromCustomer);
 
-		this.lastRowNumber = 0;
+		this.lastRowNumber = startFromCompany;
 		this.hasMoreRecords = this.companyCount > 0;
 
 		this.jan1_1800_DayNo = DateTime.ymdToDayNumber(1800, 1, 1);
@@ -60,7 +60,7 @@ public class CompanyTable implements TableGenerator<CompanyRow>
 
 	public boolean hasMoreRecords()
 	{
-		if (lastRowNumber >= companyCount)
+		if (lastRowNumber >= startFromCompany + companyCount)
 		{
 			hasMoreRecords = false;
 		}
@@ -69,10 +69,10 @@ public class CompanyTable implements TableGenerator<CompanyRow>
 
 	public CompanyRow generateNextRecord()
 	{
-        if (lastRowNumber % companyFile.getCompanyCountForOneLoadUnit() == 0)
-        {
-            initNextLoadUnit();
-        }
+		if (lastRowNumber % companyFile.getCompanyCountForOneLoadUnit() == 0)
+		{
+			initNextLoadUnit();
+		}
 
 		CompanyRow row = new CompanyRow();
 
@@ -92,7 +92,7 @@ public class CompanyTable implements TableGenerator<CompanyRow>
 
 		return row;
 	}
-	
+
 	private void initNextLoadUnit()
 	{
 		long rngSkipCount = lastRowNumber * RNG_SKIP_ONE_ROW_COMPANY;
