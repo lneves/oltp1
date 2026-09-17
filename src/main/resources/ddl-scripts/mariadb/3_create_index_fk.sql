@@ -1,9 +1,3 @@
--- MariaDB has no INCLUDE clause: the PostgreSQL form of ix_trade_request_nc1 is
--- UNIQUE (tr_b_id, tr_s_symb, tr_t_id) INCLUDE (tr_bid_price, tr_qty); here the
--- two payload columns are appended to the key. Uniqueness strength is unchanged
--- because tr_t_id is already unique.
-
--- SET UNIQUE_CHECKS=0;
 SET FOREIGN_KEY_CHECKS=0;
 
 CREATE INDEX ix_company_comp_nc1 ON company_competitor (cp_co_id);
@@ -127,6 +121,6 @@ ALTER TABLE exchange ADD CONSTRAINT fk_exchange_ad FOREIGN KEY (ex_ad_id) REFERE
 ALTER TABLE financial ADD CONSTRAINT fk_financial_co FOREIGN KEY (fi_co_id) REFERENCES company (co_id);
 ALTER TABLE settlement ADD CONSTRAINT fk_settlement_t FOREIGN KEY (se_t_id) REFERENCES trade (t_id);
 
--- SET UNIQUE_CHECKS=1;
+
 SET FOREIGN_KEY_CHECKS=1;
 

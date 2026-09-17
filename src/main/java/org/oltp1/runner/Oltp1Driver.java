@@ -203,11 +203,11 @@ public class Oltp1Driver implements Callable<Integer>
 				dmExec.shutdownNow();
 				log.error("Asynchronous clients did not terminate");
 			}
-			
+
 			mee.stopAccepting();
 			long remaining = mee.drain();
 			metrics.markEnd();
-			progressMonitor.setDraining(true); 
+			progressMonitor.setDraining(true);
 
 			if (remaining > 0)
 			{
@@ -272,8 +272,8 @@ public class Oltp1Driver implements Callable<Integer>
 		int asyncPoolSize = (int) Math.ceil(clients * tradeOrderPct);
 
 		asyncPoolSize = Math.max(2, asyncPoolSize); // Ensure a minimum of 2 threads
-	
-		return 6;
+
+		return asyncPoolSize;
 	}
 
 	private String getDbInfo(SqlContext sqlCtx)

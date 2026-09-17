@@ -1,6 +1,6 @@
 services:
   oropledb:
-    image: orioledb/orioledb:latest-pg17
+    image: orioledb/orioledb:latest-pg18
     container_name: ${PG_CONTAINER_NAME:-orioledb_oltp1}
     restart: unless-stopped
     environment:
