@@ -70,6 +70,9 @@ public class GenUtils
 	 */
 	public static LocalDateTime nonUniformTradeDts(CRandom random, int daysOfInitialTrades, int backOffSeconds, int aValue, int sValue)
 	{
+		if (daysOfInitialTrades <= 0)
+			throw new IllegalStateException("Initial trade history must span at least one workday");
+
 		long initialTradeSeconds = (long) daysOfInitialTrades * HOURS_PER_WORKDAY * SECONDS_PER_HOUR;
 
 		// Compliant runs use 300 workdays, far longer than the reference back-offs.

@@ -1,9 +1,9 @@
 package org.oltp1.egen.io;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * A utility class for writing generated data rows to output flat files. It
@@ -26,7 +26,8 @@ public class FlatFileWriter implements AutoCloseable
 	public FlatFileWriter(String filePath) throws IOException
 	{
 		// The second argument 'false' to FileWriter specifies overwrite mode.
-		this.writer = new BufferedWriter(new FileWriter(new File(filePath), false));
+		//this.writer = new BufferedWriter(new FileWriter(new File(filePath), false));
+		this.writer = Files.newBufferedWriter(Path.of(filePath));
 	}
 
 	/**
@@ -57,7 +58,6 @@ public class FlatFileWriter implements AutoCloseable
 	{
 		if (writer != null)
 		{
-			writer.flush();
 			writer.close();
 		}
 	}

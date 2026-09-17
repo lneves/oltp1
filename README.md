@@ -88,10 +88,10 @@ cp env.example .env
 # Edit .env as appropriate, then:
 docker compose up -d
 
-# Generate minimal dataset
-oltp1 egen -c 5000 -t 5000 -w 1 -o ./flat_out
+# Generate the initial dataset (300 trade days)
+oltp1 egen -c 5000 -t 5000 -w 300 -o ./flat_out
 # …or equivalently, use the fat JAR:
-# java -jar oltp1.jar egen -c 5000 -t 5000 -w 1 -o ./flat_out
+# java -jar egen -c 5000 -t 5000 -w 300 -o ./flat_out
 
 # Initialize schema & load data (use env var for safety)
 export OLTP1_PASSWORD='<password>'

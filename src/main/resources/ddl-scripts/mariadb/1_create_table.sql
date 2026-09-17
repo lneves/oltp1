@@ -78,7 +78,7 @@ CREATE TABLE holding_history (
   hh_t_id BIGINT(16) NOT NULL,
   hh_before_qty MEDIUMINT(7) NOT NULL,
   hh_after_qty MEDIUMINT(7) NOT NULL,
-  PRIMARY KEY (hh_h_t_id, hh_t_id
+  PRIMARY KEY (hh_h_t_id, hh_t_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS holding_summary;
