@@ -36,7 +36,15 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build (Maven native profile)
+        if: runner.os != 'Windows'
         run: mvn clean -q -Pnative package
+
+      - name: Build (Maven native profile, Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          mvn clean -q -Pnative package
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify native-image metadata in shaded JAR
         run: jar tf target/oltp1.jar | grep '^META-INF/native-image/' || true
