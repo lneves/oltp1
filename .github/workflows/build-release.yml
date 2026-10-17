@@ -36,9 +36,21 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build (Maven native profile)
+        run: mvn clean -q -Pnative package
+
+      - name: Verify native-image metadata in shaded JAR
+        run: jar tf target/oltp1.jar | grep '^META-INF/native-image/' || true
+
+      # PowerShell does not stop on a failed native command by default. Keep this as a
+      # separate step so a Maven failure cannot be masked by the command that follows it.
+      - name: Verify native executable was produced (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          mvn clean -q -Pnative package
-          jar tf target/oltp1.jar | grep '^META-INF/native-image/' || true
+          if (-not (Test-Path -LiteralPath .\target\oltp1.exe)) {
+            Get-ChildItem -Force .\target | Format-Table Name,Length
+            throw "native image .\target\oltp1.exe was not produced"
+          }
 
       - name: Smoke test (Linux/macOS)
         if: runner.os != 'Windows'

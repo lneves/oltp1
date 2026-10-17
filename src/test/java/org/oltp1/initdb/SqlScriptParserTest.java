@@ -504,7 +504,16 @@ class SqlScriptParserTest
 
 		if ("file".equals(url.getProtocol()))
 		{
-			return listOnDisk(java.nio.file.Path.of(url.getPath()));
+			try
+			{
+				// Use the URI, not URL#getPath(): on Windows the latter yields "/C:/..."
+				// which Path.of turns into an invalid "\C:\..." path.
+				return listOnDisk(java.nio.file.Path.of(url.toURI()));
+			}
+			catch (java.net.URISyntaxException e)
+			{
+				throw new IllegalStateException("cannot convert classpath URL to a path: " + url, e);
+			}
 		}
 
 		throw new IllegalStateException(
