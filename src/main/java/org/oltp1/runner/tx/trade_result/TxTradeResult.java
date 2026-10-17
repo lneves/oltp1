@@ -1,0 +1,629 @@
+package org.oltp1.runner.tx.trade_result;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.oltp1.common.ErrorCtx;
+import org.oltp1.common.db.Scalars;
+import org.oltp1.common.db.SqlContext;
+import org.oltp1.runner.generator.TxInputGenerator;
+import org.oltp1.runner.model.TradeStatus;
+import org.oltp1.runner.runtime.BenchmarkMetrics;
+import org.oltp1.runner.runtime.TransactionSpec;
+import org.oltp1.runner.runtime.TxBase;
+import org.oltp1.runner.runtime.TxInput;
+import org.oltp1.runner.runtime.TxOutput;
+import org.oltp1.runner.runtime.TxStatsCollector;
+import org.oltp1.runner.tx.QueryFactory;
+import org.sql2o.Connection;
+import org.sql2o.Sql2o;
+import org.sql2o.data.Row;
+
+public class TxTradeResult extends TxBase
+{
+	private final Sql2o sql2o;
+	private final TradeResultDialect sql;
+	private final TxInputGenerator txInputGen;
+
+	public TxTradeResult(TxInputGenerator txInputGen, SqlContext sqlCtx, BenchmarkMetrics metrics)
+	{
+		super(metrics, new TxStatsCollector(TransactionSpec.TRADE_RESULT));
+		this.txInputGen = txInputGen;
+		this.sql2o = sqlCtx.getSql2o();
+		this.sql = QueryFactory.getQueries(TradeResultDialect.class, sqlCtx.getSqlEngine());
+	}
+
+	public TxTradeResultOutput process(TxTradeResultInput txIn)
+	{
+		return (TxTradeResultOutput) super.execute(txIn);
+	}
+
+	@Override
+	protected final TxOutput run()
+	{
+		throw new IllegalStateException(String.format("%s requires an input: call execute(%)", name(), TxTradeResultInput.class.getSimpleName()));
+	}
+
+	@Override
+	protected final TxOutput run(TxInput txInput)
+	{
+		TxTradeResultOutput txOutput = new TxTradeResultOutput();
+
+		TxTradeResultInput txTrstInput = (TxTradeResultInput) txInput;
+
+		if (txInput == null)
+		{
+			txOutput.setStatus(-1);
+			txOutput.setStatusMessage("TxTradeResultInput should not be null");
+			return txOutput;
+		}
+
+		final TradeResultSession session = new TradeResultSession();
+		session.put("trade_id", txTrstInput.tradeId());
+		session.put("requested_price", txTrstInput.requestedPrice());
+
+		try (Connection con = sql2o.beginTransaction())
+		{
+			executeFrame1(con, txOutput, session);
+
+			if (txOutput.getStatus() < 0)
+			{
+				return txOutput;
+			}
+
+			executeFrame2(con, txOutput, session);
+
+			int tax_status = session.getAsInt("tax_status");
+			double sell_value = session.getAsDouble("sell_value");
+			double buy_value = session.getAsDouble("buy_value");
+
+			if ((tax_status == 1 || tax_status == 2) && (sell_value > buy_value))
+			{
+				executeFrame3(con, txOutput, session);
+
+				if (session.getAsDouble("tax_amount") <= 0.00)
+				{
+					txOutput.setStatus(-831);
+					txOutput.setStatusMessage("tax_amount <= 0.00");
+					return txOutput;
+				}
+			}
+
+			executeFrame4(con, txOutput, session);
+
+			if (session.getAsDouble("comm_rate") <= 0)
+			{
+				txOutput.setStatus(-841);
+				txOutput.setStatusMessage("comm_rate <= 0.00");
+				return txOutput;
+			}
+
+			executeFrame5(con, txOutput, session);
+
+			executeFrame6(con, txOutput, session);
+
+			con.commit();
+
+			Map<String, Object> out = new HashMap<>();
+			out.put("acct_id", session.get("acct_id"));
+			out.put("acct_bal", session.get("acct_bal"));
+			out.put("status", TradeStatus.COMPLETED.id);
+
+			txOutput.output = out;
+		}
+		catch (Throwable t)
+		{
+			ErrorCtx ectx = new ErrorCtx(t);
+			txOutput.setStatus(-1);
+			txOutput.setStatusMessage(ectx.toString());
+		}
+
+		return txOutput;
+	}
+
+	private void executeFrame1(final Connection con, final TxOutput txOutput, final TradeResultSession session)
+	{
+		Long claimedTradeId = con
+				.createQuery(sql.claimTrade())
+				.addParameter("trade_id", session.get("trade_id"))
+				.addParameter("st_submitted_id", TradeStatus.SUBMITTED.id)
+				.executeScalar(Long.class);
+
+		if (claimedTradeId == null)
+		{
+			txOutput.setStatus(-811);
+			txOutput.setStatusMessage("trade not found or not in SUBMITTED state");
+			return;
+		}
+
+		List<Map<String, Object>> tradeInfo = con
+				.createQuery(sql.getTradeInfo())
+				.addParameter("trade_id", session.get("trade_id"))
+				.executeAndFetchTable()
+				.asList();
+
+		if (tradeInfo.size() != 1)
+		{
+			txOutput.setStatus(-811);
+			txOutput.setStatusMessage("num_found != 1");
+			return;
+		}
+
+		session.put("num_found", tradeInfo.size());
+		session.putAll(tradeInfo.get(0));
+
+		// Serialize holding changes with an account guard
+		Long lockedAcctId = con
+				.createQuery(sql.lockCustomerAccount())
+				.addParameter("acct_id", session.get("acct_id"))
+				.executeScalar(Long.class);
+
+		if (lockedAcctId == null)
+		{
+			txOutput.setStatus(-812);
+			txOutput.setStatusMessage("account not found for trade");
+			return;
+		}
+
+		Integer hsQty = con
+				.createQuery(sql.getHoldingSummaryForUpdate())
+				.addParameter("acct_id", session.get("acct_id"))
+				.addParameter("symbol", session.get("symbol"))
+				.executeScalar(Integer.class);
+
+		session.put("hs_qty", hsQty == null ? 0 : hsQty);
+	}
+
+	private void executeFrame2(final Connection con, final TxOutput txOutput, final TradeResultSession session)
+	{
+		Map<String, Object> customerAccount = con
+				.createQuery(sql.getCustomerAccount())
+				.addParameter("acct_id", session.get("acct_id"))
+				.executeAndFetchTable()
+				.asList()
+				.stream()
+				.findFirst()
+				.orElse(Collections.emptyMap());
+
+		session.putAll(customerAccount);
+
+		if (session.getAsBoolean("type_is_sell"))
+		{
+			processSellTrade(con, session);
+		}
+		else
+		{
+			processBuyTrade(con, session);
+		}
+	}
+
+	private void executeFrame3(final Connection con, final TxOutput txOutput, final TradeResultSession session)
+	{
+		long custId = session.getAsLong("cust_id");
+
+		double taxRate = Scalars
+				.requireDouble(
+						con,
+						sql.getTaxRate(),
+						"tax rate for customer " + custId + " executing trade " + session.get("trade_id"),
+						"cust_id",
+						custId);
+
+		double capitalGain = session.getAsDouble("sell_value") - session.getAsDouble("buy_value");
+		double taxAmount = capitalGain > 0 ? capitalGain * taxRate : 0;
+
+		con
+				.createQuery(sql.updateTradeTax())
+				.addParameter("trade_id", session.get("trade_id"))
+				.addParameter("tax_amount", taxAmount)
+				.executeUpdate();
+
+		session.put("tax_amount", taxAmount);
+	}
+
+	private void executeFrame4(final Connection con, final TxOutput txOutput, final TradeResultSession session)
+	{
+		Map<String, Object> cmr = con
+				.createQuery(sql.getCommissionRate())
+				.addParameter("cust_id", session.get("cust_id"))
+				.addParameter("symbol", session.get("symbol"))
+				.addParameter("trade_qty", session.get("trade_qty"))
+				.addParameter("type_id", session.get("type_id"))
+				.executeAndFetchTable()
+				.asList()
+				.stream()
+				.findFirst()
+				.orElse(Collections.emptyMap());
+
+		session.putAll(cmr);
+	}
+
+	private void executeFrame5(final Connection con, final TxOutput txOutput, final TradeResultSession session)
+	{
+
+		BigDecimal commAmount = BigDecimal
+				.valueOf(session.getAsDouble("comm_rate"))
+				.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
+				.multiply(BigDecimal.valueOf(session.getAsInt("trade_qty")))
+				.multiply(BigDecimal.valueOf(session.getAsDouble("requested_price")))
+				.setScale(2, RoundingMode.HALF_UP);
+		session.put("comm_amount", commAmount.doubleValue());
+
+		int completed = con
+				.createQuery(sql.updateTrade())
+				.addParameter("comm_amount", commAmount)
+				.addParameter("trade_dts", session.get("trade_dts"))
+				.addParameter("st_completed_id", TradeStatus.COMPLETED.id)
+				.addParameter("st_submitted_id", TradeStatus.SUBMITTED.id)
+				.addParameter("trade_price", session.get("requested_price"))
+				.addParameter("trade_id", session.get("trade_id"))
+				.executeUpdate()
+				.getResult();
+
+		if (completed != 1)
+		{
+			throw new IllegalStateException(
+					String.format("Trade %s is no longer in SUBMITTED state", session.get("trade_id")));
+		}
+
+		con
+				.createQuery(sql.insertTradeHistory())
+				.addParameter("trade_id", session.get("trade_id"))
+				.addParameter("trade_dts", session.get("trade_dts"))
+				.addParameter("st_completed_id", TradeStatus.COMPLETED.id)
+				.executeUpdate();
+
+		con
+				.createQuery(sql.updateBroker())
+				.addParameter("comm_amount", commAmount)
+				.addParameter("broker_id", session.get("broker_id"))
+				.executeUpdate();
+
+		session.put("comm_amount", commAmount.doubleValue());
+	}
+
+	private void executeFrame6(final Connection con, final TxOutput txOutput, final TradeResultSession session)
+	{
+		LocalDateTime dueDate = ((LocalDateTime) session.get("trade_dts")).plus(2, ChronoUnit.DAYS);
+
+		boolean tradeIsCash = session.getAsBoolean("trade_is_cash");
+		boolean tradeIsSell = session.getAsBoolean("type_is_sell");
+		double tradePrice = session.getAsDouble("requested_price");
+		int tradeQty = session.getAsInt("trade_qty");
+		double charge = session.getAsDouble("charge");
+
+		double taxAmount = session.get("tax_amount") == null ? 0.0 : session.getAsDouble("tax_amount");
+		double commAmount = session.getAsDouble("comm_amount");
+		int taxStatus = session.getAsInt("tax_status");
+
+		double seAmount;
+
+		if (tradeIsSell)
+		{
+			seAmount = (tradeQty * tradePrice) - charge - commAmount;
+		}
+		else
+		{
+			seAmount = -((tradeQty * tradePrice) + charge + commAmount);
+		}
+
+		if (taxStatus == 1)
+		{
+			seAmount = seAmount - taxAmount;
+		}
+
+		String cashType = tradeIsCash ? "Cash Account" : "Margin";
+
+		con
+				.createQuery(sql.insertSettlement())
+				.addParameter("trade_id", session.get("trade_id"))
+				.addParameter("cash_type", cashType)
+				.addParameter("due_date", dueDate)
+				.addParameter("se_amount", seAmount)
+				.executeUpdate();
+
+		if (tradeIsCash)
+		{
+			con
+					.createQuery(sql.updateCustomerAccount())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("se_amount", seAmount)
+					.executeUpdate();
+
+			con
+					.createQuery(sql.insertCashTransaction())
+					.addParameter("trade_id", session.get("trade_id"))
+					.addParameter("trade_dts", session.get("trade_dts"))
+					.addParameter("se_amount", seAmount)
+					.addParameter("ct_name", String.format("%s %d shares of %s", session.getAsString("type_name"), tradeQty, session.getAsString("s_name")))
+					.executeUpdate();
+		}
+
+		double balance = con
+				.createQuery(sql.getAccountBalance())
+				.addParameter("acct_id", session.get("acct_id"))
+				.executeScalar(BigDecimal.class)
+				.doubleValue();
+
+		session.put("acct_bal", balance);
+	}
+
+	private void processSellTrade(final Connection con, final TradeResultSession session)
+	{
+		double buyValue = 0;
+		double sellValue = 0;
+
+		int neededQty = session.getAsInt("trade_qty");
+		int hsQty = session.getAsInt("hs_qty");
+		double tradePrice = session.getAsDouble("requested_price");
+		int tradeQty = session.getAsInt("trade_qty");
+		LocalDateTime tradeDts = txInputGen.now();
+
+		if (hsQty == 0)
+		{
+			con
+					.createQuery(sql.upsertHoldingSummarySell())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.addParameter("trade_qty", -tradeQty)
+					.executeUpdate();
+		}
+		else if (hsQty != tradeQty)
+		{
+			con
+					.createQuery(sql.updateHoldingSummary())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.addParameter("trade_qty", tradeQty)
+					.executeUpdate();
+		}
+
+		if (hsQty > 0)
+		{
+			List<Row> holdingList = populateHoldingList(con, session);
+			for (Row holdingItem : holdingList)
+			{
+				if (neededQty <= 0)
+				{
+					break;
+				}
+
+				long holdId = holdingItem.getLong("hold_id");
+				int holdQty = holdingItem.getInteger("hold_qty");
+				double holdPrice = holdingItem.getBigDecimal("hold_price").doubleValue();
+
+				if (holdQty > neededQty)
+				{
+					con
+							.createQuery(sql.insertHoldingHistory())
+							.addParameter("hold_id", holdId)
+							.addParameter("trade_id", session.get("trade_id"))
+							.addParameter("hold_qty", holdQty)
+							.addParameter("after_qty", holdQty - neededQty)
+							.executeUpdate();
+
+					con
+							.createQuery(sql.updateHolding())
+							.addParameter("qty", holdQty - neededQty)
+							.addParameter("hold_id", holdId)
+							.executeUpdate();
+
+					buyValue += neededQty * holdPrice;
+					sellValue += neededQty * tradePrice;
+					neededQty = 0;
+				}
+				else
+				{
+					con
+							.createQuery(sql.insertHoldingHistory())
+							.addParameter("hold_id", holdId)
+							.addParameter("trade_id", session.get("trade_id"))
+							.addParameter("hold_qty", holdQty)
+							.addParameter("after_qty", 0)
+							.executeUpdate();
+
+					con
+							.createQuery(sql.deleteHolding())
+							.addParameter("hold_id", holdId)
+							.executeUpdate();
+
+					buyValue += holdQty * holdPrice;
+					sellValue += holdQty * tradePrice;
+					neededQty = neededQty - holdQty;
+				}
+			}
+		}
+
+		// need to sell more? go short
+		if (neededQty > 0)
+		{
+			con
+					.createQuery(sql.insertHoldingHistory())
+					.addParameter("hold_id", session.get("trade_id"))
+					.addParameter("trade_id", session.get("trade_id"))
+					.addParameter("hold_qty", 0)
+					.addParameter("after_qty", -neededQty)
+					.executeUpdate();
+
+			con
+					.createQuery(sql.insertHolding())
+					.addParameter("trade_id", session.get("trade_id"))
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.addParameter("trade_dts", tradeDts)
+					.addParameter("trade_price", tradePrice)
+					.addParameter("qty", -neededQty)
+					.executeUpdate();
+
+		}
+		else if (hsQty == tradeQty)
+		{
+			con
+					.createQuery(sql.deleteHoldingSummary())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.executeUpdate();
+		}
+
+		session.put("buy_value", buyValue);
+		session.put("sell_value", sellValue);
+		session.put("trade_dts", tradeDts);
+	}
+
+	private void processBuyTrade(Connection con, TradeResultSession session)
+	{
+		double buyValue = 0;
+		double sellValue = 0;
+
+		int neededQty = session.getAsInt("trade_qty");
+		int hsQty = session.getAsInt("hs_qty");
+		double tradePrice = session.getAsDouble("requested_price");
+		int tradeQty = session.getAsInt("trade_qty");
+		LocalDateTime tradeDts = txInputGen.now();
+
+		if (hsQty == 0)
+		{
+			con
+					.createQuery(sql.upsertHoldingSummaryBuy())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.addParameter("trade_qty", tradeQty)
+					.executeUpdate();
+		}
+		else if (-hsQty != tradeQty)
+		{
+			con
+					.createQuery(sql.updateHoldingSummaryBuy())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.addParameter("trade_qty", tradeQty)
+					.executeUpdate();
+		}
+
+		if (hsQty < 0)
+		{
+			List<Row> holdingList = populateHoldingList(con, session);
+			for (Row holdingItem : holdingList)
+			{
+				if (neededQty <= 0)
+				{
+					break;
+				}
+
+				long holdId = holdingItem.getLong("hold_id");
+				int holdQty = holdingItem.getInteger("hold_qty");
+				double holdPrice = holdingItem.getBigDecimal("hold_price").doubleValue();
+
+				if (holdQty + neededQty < 0)
+				{
+					con
+							.createQuery(sql.insertHoldingHistory())
+							.addParameter("hold_id", holdId)
+							.addParameter("trade_id", session.get("trade_id"))
+							.addParameter("hold_qty", holdQty)
+							.addParameter("after_qty", holdQty + neededQty)
+							.executeUpdate();
+
+					con
+							.createQuery(sql.updateHolding())
+							.addParameter("qty", holdQty + neededQty)
+							.addParameter("hold_id", holdId)
+							.executeUpdate();
+
+					sellValue += neededQty * holdPrice;
+					buyValue += neededQty * tradePrice;
+					neededQty = 0;
+				}
+				else
+				{
+					con
+							.createQuery(sql.insertHoldingHistory())
+							.addParameter("hold_id", holdId)
+							.addParameter("trade_id", session.get("trade_id"))
+							.addParameter("hold_qty", holdQty)
+							.addParameter("after_qty", 0)
+							.executeUpdate();
+
+					con
+							.createQuery(sql.deleteHolding())
+							.addParameter("hold_id", holdId)
+							.executeUpdate();
+
+					holdQty = -holdQty;
+					sellValue += holdQty * holdPrice;
+					buyValue += holdQty * tradePrice;
+					neededQty = neededQty - holdQty;
+				}
+			}
+			// execute all updates from the above loop
+
+		}
+
+		// all shorts are covered? a new long is created
+		if (neededQty > 0)
+		{
+			con
+					.createQuery(sql.insertHoldingHistory())
+					.addParameter("hold_id", session.get("trade_id"))
+					.addParameter("trade_id", session.get("trade_id"))
+					.addParameter("hold_qty", 0)
+					.addParameter("after_qty", neededQty)
+					.executeUpdate();
+
+			con
+					.createQuery(sql.insertHolding())
+					.addParameter("trade_id", session.get("trade_id"))
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.addParameter("trade_dts", tradeDts)
+					.addParameter("trade_price", tradePrice)
+					.addParameter("qty", neededQty)
+					.executeUpdate();
+
+		}
+		else if (-hsQty == tradeQty)
+		{
+			con
+					.createQuery(sql.deleteHoldingSummary())
+					.addParameter("acct_id", session.get("acct_id"))
+					.addParameter("symbol", session.get("symbol"))
+					.executeUpdate();
+		}
+
+		session.put("buy_value", buyValue);
+		session.put("sell_value", sellValue);
+		session.put("trade_dts", tradeDts);
+	}
+
+	private List<Row> populateHoldingList(final Connection con, final TradeResultSession session)
+	{
+		String holdingQStmt;
+		if (session.getAsBoolean("is_lifo"))
+		{
+			// Estimates will be based on closing most recently acquired holdings
+			// Could return 0, 1 or many rows
+			holdingQStmt = sql.getHoldingDescForUpdate();
+		}
+		else
+		{
+			// Estimates will be based on closing oldest holdings
+			// Could return 0, 1 or many rows
+			holdingQStmt = sql.getHoldingAscForUpdate();
+		}
+
+		return con
+				.createQuery(holdingQStmt)
+				.addParameter("acct_id", session.get("acct_id"))
+				.addParameter("symbol", session.get("symbol"))
+				.executeAndFetchTable()
+				.rows();
+
+	}
+
+}

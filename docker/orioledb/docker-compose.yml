@@ -1,0 +1,52 @@
+services:
+    orioledb:
+    image: orioledb/orioledb:latest-pg18
+    container_name: ${PG_CONTAINER_NAME:-orioledb_oltp1}
+    restart: unless-stopped
+
+      environment:
+        POSTGRES_USER: ${POSTGRES_ADMIN_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+        POSTGRES_DB: ${POSTGRES_DB:-main_db}
+    
+      volumes:
+        # Config files can stay as bind mounts
+        - type: bind
+          source: ./custom_postgresql.conf
+          target: /etc/postgresql/postgresql.conf
+          read_only: true
+    
+        - type: bind
+          source: ./custom_pg_hba.conf
+          target: /etc/postgresql/pg_hba.conf
+          read_only: true
+    
+        # PostgreSQL data -> Docker volume
+        - type: volume
+          source: ${PGDATA_HOST_PATH:-./pgdata}
+          target: /var/lib/postgresql/data
+    
+        # OrioleDB/TPC-E tablespace -> Docker volume
+        - type: volume
+          source: ${TABLESPACE_HOST_PATH:-./pg_tablespaces}
+          target: /mnt/tablespaces
+    
+        - type: bind
+          source: ./init
+          target: /docker-entrypoint-initdb.d
+          read_only: true
+    
+      entrypoint:
+        - /bin/sh
+        - -lc
+        - |
+          mkdir -p /mnt/tablespaces
+          chown -R 70:70 /mnt/tablespaces
+          exec /usr/local/bin/docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
+    
+      ports:
+        - ${PG_PORT:-5432}:5432
+
+volumes:
+  pgdata:
+  tablespaces:

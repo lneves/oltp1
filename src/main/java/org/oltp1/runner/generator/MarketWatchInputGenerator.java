@@ -1,0 +1,143 @@
+package org.oltp1.runner.generator;
+
+import java.time.LocalDate;
+import java.time.Month;
+
+import org.oltp1.runner.model.RandomCustomer;
+import org.oltp1.runner.tx.market_watch.TxMarketWatchInput;
+
+public class MarketWatchInputGenerator
+{
+	// Default values from DriverParamSettings.h for a compliant run
+	private static final int MW_PERCENT_BY_INDUSTRY = 5;
+	private static final int MW_PERCENT_BY_WATCH_LIST = 60;
+	// The remaining 35% is by_acct_id
+	
+	// reference InputFlatFilesDeclarations.h iBaseCompanyCount = 5000;
+	private static final int BASE_COMPANY_COUNT = 5000;
+
+	// Constants from DailyMarketTable.h for date generation
+	private static final LocalDate MW_DAILY_MARKET_BASE_DATE = LocalDate.of(2000, Month.JANUARY, 3);
+
+	private final CustomerSelector customerSelector;
+	private final IndustrySelector industrySelector;
+	private final CompanySelector companySelector;
+
+	public MarketWatchInputGenerator(CustomerSelector customerSelector, IndustrySelector industrySelector, CompanySelector companySelector)
+	{
+		this.customerSelector = customerSelector;
+		this.industrySelector = industrySelector;
+		this.companySelector = companySelector;
+	}
+
+	/**
+	 * Generates the input for the Market-Watch transaction. Based on
+	 * CCETxnInputGenerator::GenerateMarketWatchInput.
+	 *
+	 * @return A TxMarketWatchInput object populated with generated data.
+	 */
+	public TxMarketWatchInput generateMarketWatchInput()
+	{
+		// Securities chosen by
+		// Watch list:
+		// 60% 57% to 63%
+		// Account_ID:
+		// 35% 33% to 37%
+		// Industry:
+		// 5% 4.5% to 5.5%
+
+		CRandom random = ThreadLocalCRandom.get();
+
+		// Randomly determine the input type for the transaction.
+		int threshold = random.rndIntRange(1, 100);
+
+		long acctId = 0;
+		long cId = 0;
+		long startingCoId = 0;
+		long endingCoId = 0;
+		LocalDate startDay = getStartDay(random);
+		String industryName = null;
+
+		if (threshold <= MW_PERCENT_BY_INDUSTRY)
+		{
+			// By Industry: Select a random industry name.
+
+			int industryIndex = random.rndIntRange(0, industrySelector.getLen() - 1);
+			industryName = industrySelector.get(industryIndex).getInName();
+
+			long minCoId = companySelector.getMinCoId();
+			long maxCoId = companySelector.getMaxCoId();
+			long activeCompanies = companySelector.getActiveCompanyCount();
+
+			if (activeCompanies <= BASE_COMPANY_COUNT)
+			{
+			    // Standard-size database: query the entire active company range.
+			    // Reference: starting_co_id = startFromCompany; ending = start + active - 1.
+			    startingCoId = minCoId;
+			    endingCoId = maxCoId;
+			}
+			else
+			{
+			    // Scaled database: reference uses a fixed BASE_COMPANY_COUNT-company window.
+			    // start in [minCoId, maxCoId - BASE_COMPANY_COUNT + 1] so the window stays
+			    // within the existing ids; end = start + BASE_COMPANY_COUNT - 1.
+			    long maxStartCoId = Math.max(minCoId, maxCoId - BASE_COMPANY_COUNT + 1);
+			    startingCoId = random.rndInt64Range(minCoId, maxStartCoId);
+			    endingCoId = startingCoId + BASE_COMPANY_COUNT - 1;
+			}
+		}
+		else if (threshold <= MW_PERCENT_BY_INDUSTRY + MW_PERCENT_BY_WATCH_LIST)
+		{
+			// By Watch List: Select a random customer ID.
+			RandomCustomer customer = customerSelector.randomCustomer();
+			cId = customer.cId;
+		}
+		else
+		{
+			// By Account ID: Select a random customer account ID.
+			RandomCustomer customer = customerSelector.randomCustomer();
+			acctId = customerSelector.getRndAccIdForCustomer(customer);
+		}
+
+		return new TxMarketWatchInput(acctId, cId, startingCoId, endingCoId, startDay, industryName);
+	}
+
+	// This logic is ported from the C++ source to generate a non-uniform date.
+	private final LocalDate getStartDay(CRandom random)
+	{
+		// Selects a random week from the 5-year (260-week) period.
+		// + 5 ensures the selected date is always at least five weeks into the
+		// historical data.
+		int week = (int) random.nonUniformRandom(0, 255, 255, 0) + 5;
+
+		// Select a day within that week using a non-uniform, weighted distribution
+		// to simulate realistic user behavior where queries favor the start and end of
+		// the week.
+		// The probabilities are as follows:
+		// - Monday: 20%
+		// - Tuesday: 7%
+		// - Wednesday: 6%
+		// - Thursday: 7%
+		// - Friday: 60%
+
+		int dayOfWeek;
+		int dayThreshold = random.rndIntRange(1, 100);
+		if (dayThreshold > 40)
+			dayOfWeek = 4; // Friday
+		else if (dayThreshold <= 20)
+			dayOfWeek = 0; // Monday
+		else if (dayThreshold <= 27)
+			dayOfWeek = 1; // Tuesday
+		else if (dayThreshold <= 33)
+			dayOfWeek = 2; // Wednesday
+		else
+			dayOfWeek = 3; // Thursday
+
+		int totalDayOffset = week * 7 + dayOfWeek;
+
+		// go back to our start date and add our calculated day.
+		LocalDate startDate = MW_DAILY_MARKET_BASE_DATE.plusDays(totalDayOffset);
+
+		return startDate;
+	}
+}
